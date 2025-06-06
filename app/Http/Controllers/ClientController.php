@@ -58,7 +58,7 @@ class ClientController extends Controller
         $client = Client::create($request->validated());
 
         // Generar una contraseña aleatoria
-        $password = $this->generateRandomPassword();
+        $password = 'password';
 
         // Crear el usuario asociado al cliente con rol CA (Client Admin)
         $user = User::create([
