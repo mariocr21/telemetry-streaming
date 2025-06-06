@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VehicleRegistrationController;
 use App\Http\Controllers\RegisterVehiculeController;
 use Illuminate\Http\Request;
@@ -17,3 +18,5 @@ Route::post('/register/vehicle', [VehicleRegistrationController::class, 'registe
 Route::prefix('/registers')->group(function () {
     Route::post('', [RegisterVehiculeController::class, 'store']);
 });
+
+// Rutas para obtener datos de vehículos

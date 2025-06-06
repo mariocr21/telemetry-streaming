@@ -25,7 +25,8 @@ class Vehicle extends Model
         'auto_detected',
         'is_configured',
         'first_reading_at',
-        'last_reading_at'
+        'last_reading_at',
+        'status',
     ];
 
     protected $casts = [

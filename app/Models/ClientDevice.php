@@ -37,7 +37,7 @@ class ClientDevice extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function vehicles()
+public function vehicles()
     {
         return $this->hasMany(Vehicle::class, 'client_device_id');
     }
