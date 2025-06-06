@@ -21,7 +21,17 @@ export default defineConfig({
                 },
             },
         }),
-    ],
+    ],build: {
+        target: 'es2022', // ⭐ Actualizar target para soportar top-level await
+        rollupOptions: {
+            output: {
+                format: 'es', // ⭐ Usar formato ES modules
+            },
+        },
+    },
+    esbuild: {
+        target: 'es2022', // ⭐ También actualizar esbuild target
+    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './resources/js'),

@@ -115,36 +115,45 @@ function cleanupEcho() {
     }
 }
 
-// Configurar Echo al cargar la aplicación
-await setupEcho();
-setupAxios();
+// ⭐ FUNCIÓN PRINCIPAL QUE INICIALIZA TODO
+async function initializeApp() {
+    // Configurar Echo y axios
+    await setupEcho();
+    setupAxios();
 
-// Cleanup al cerrar/recargar la página
-window.addEventListener('beforeunload', cleanupEcho);
+    // Cleanup al cerrar/recargar la página
+    window.addEventListener('beforeunload', cleanupEcho);
 
-createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
-    setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .use(ZiggyVue);
+    // Crear la aplicación Inertia
+    createInertiaApp({
+        title: (title) => `${title} - ${appName}`,
+        resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
+        setup({ el, App, props, plugin }) {
+            const app = createApp({ render: () => h(App, props) })
+                .use(plugin)
+                .use(ZiggyVue);
 
-        // Hacer Echo disponible en toda la aplicación Vue
-        app.config.globalProperties.$echo = window.Echo;
-        
-        // Provide Echo para composables
-        app.provide('echo', window.Echo);
+            // Hacer Echo disponible en toda la aplicación Vue
+            app.config.globalProperties.$echo = window.Echo;
+            
+            // Provide Echo para composables
+            app.provide('echo', window.Echo);
 
-        app.mount(el);
-    },
-    progress: {
-        color: '#4B5563',
-    },
+            app.mount(el);
+        },
+        progress: {
+            color: '#4B5563',
+        },
+    });
+
+    // Inicializar tema
+    initializeTheme();
+}
+
+// ⭐ INICIALIZAR LA APP (sin top-level await)
+initializeApp().catch(error => {
+    console.error('❌ Error inicializando la aplicación:', error);
 });
-
-// This will set light / dark mode on page load...
-initializeTheme();
 
 // Exportar para uso en otros módulos si es necesario
 export { setupEcho, cleanupEcho };
