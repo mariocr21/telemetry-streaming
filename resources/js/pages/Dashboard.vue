@@ -163,7 +163,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head title="Dashboard Telemetría" />
+    <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 text-white">
@@ -172,9 +172,6 @@ onMounted(() => {
                 <div class="flex items-center justify-between">
                     <!-- Left: Brand -->
                     <div>
-                        <h1 class="text-2xl font-bold text-white font-mono tracking-wide">
-                            NEURONA TELEMETRÍA
-                        </h1>
                         <p class="text-sm text-slate-400">Monitoreo en Tiempo Real</p>
                     </div>
 
