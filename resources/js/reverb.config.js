@@ -10,9 +10,9 @@ export function createReverbConnection() {
     const config = {
         broadcaster: 'reverb',
         key: import.meta.env.VITE_REVERB_APP_KEY || 'app-key',
-        wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
-        wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-        wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+        wsHost: import.meta.env.VITE_REVERB_HOST || 'ws.neurona.xyz',
+        wsPort: import.meta.env.VITE_REVERB_PORT || 443,
+        wssPort: import.meta.env.VITE_REVERB_PORT || 443,
         forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
         enabledTransports: ['ws', 'wss'],
     };
