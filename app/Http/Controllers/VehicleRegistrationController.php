@@ -170,7 +170,7 @@ class VehicleRegistrationController extends Controller
 
     /**
      * Procesar sensores soportados y vincularlos al vehículo
-     */
+     */ 
     private function processSupportedSensors(Vehicle $vehicle, array $supportedPids)
     {
         $result = [
@@ -188,8 +188,11 @@ class VehicleRegistrationController extends Controller
             ->get()
             ->keyBy('sensor.pid');
 
-        // PASO 1: Desactivar TODOS los sensores del vehículo primero
+        // PASO 1: Desactivar sensores que YA NO están en el array de PIDs soportados
         VehicleSensor::where('vehicle_id', $vehicle->id)
+            ->whereHas('sensor', function ($query) use ($supportedPids) {
+                $query->whereNotIn('pid', $supportedPids);
+            })
             ->update(['is_active' => false]);
 
         // PASO 2: Procesar PIDs soportados
@@ -198,7 +201,7 @@ class VehicleRegistrationController extends Controller
                 $sensor = $existingSensors[$pid];
 
                 if (isset($existingVehicleSensors[$pid])) {
-                    // El sensor ya existe - REACTIVARLO
+                    // El sensor ya existe - ASEGURAR QUE ESTÉ ACTIVO y actualizar valores
                     $existingVehicleSensors[$pid]->update([
                         'is_active' => true,
                         'frequency_seconds' => 5, // Actualizar frecuencia si es necesario
@@ -206,7 +209,7 @@ class VehicleRegistrationController extends Controller
                         'max_value' => $sensor->max_value
                     ]);
 
-                    Log::info("Sensor reactivado", [
+                    Log::info("Sensor actualizado/reactivado", [
                         'vehicle_id' => $vehicle->id,
                         'sensor_pid' => $pid,
                         'sensor_name' => $sensor->name
@@ -240,7 +243,6 @@ class VehicleRegistrationController extends Controller
 
         return $result;
     }
-
     /**
      * Desactivar sensores que ya no están en la lista de PIDs soportados
      */
