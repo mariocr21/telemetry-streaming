@@ -47,6 +47,13 @@ class RegisterVehiculeController extends Controller
             $telemetryData = [];
             $processedReadings = [];
 
+            //revisar los datos recibidos en log
+            Log::debug('Received telemetry data', [
+                'device_id' => $data['id'],
+                'vehicle_vin' => $data['idc'],
+                'sensors' => $data['s'],
+            ]);
+
             foreach ($data['s'] as $sensorHex => $sensorData) {
                 $vehicleSensor = VehicleSensor::wherehas('vehicle', function ($query) use ($data) {
                     $query->where('vin', $data['idc']);

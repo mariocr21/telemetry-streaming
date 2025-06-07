@@ -26,7 +26,7 @@ class VehicleRegistrationController extends Controller
                 'id' => 'required|string',      // Serial del dispositivo
                 'idc' => 'required|string',     // VIN del vehículo
                 's' => 'required|array',        // Array de PIDs soportados
-                's.*' => 'string|regex:/^0x[0-9A-Fa-f]{2}$/' // Validar formato PID
+                's.*' => 'string' // Validar formato PID
             ]);
 
             if ($validator->fails()) {
