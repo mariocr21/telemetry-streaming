@@ -70,7 +70,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 100,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A * 100 / 255'
             ],
             [
@@ -84,7 +84,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 215,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A - 40'
             ],
             [
@@ -98,7 +98,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 99.22,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A - 128) * 100 / 128'
             ],
             [
@@ -112,7 +112,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 99.22,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A - 128) * 100 / 128'
             ],
             [
@@ -126,7 +126,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 99.22,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A - 128) * 100 / 128'
             ],
             [
@@ -140,7 +140,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 99.22,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A - 128) * 100 / 128'
             ],
             [
@@ -154,7 +154,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 765,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A * 3'
             ],
             [
@@ -181,7 +181,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 16383.75,
                 'data_bytes' => 2,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '((A * 256) + B) / 4'
             ],
             [
@@ -208,7 +208,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 63.5,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A - 128) / 2'
             ],
             [
@@ -222,7 +222,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 215,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A - 40'
             ],
             [
@@ -236,7 +236,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 655.35,
                 'data_bytes' => 2,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '((A * 256) + B) / 100'
             ],
             [
@@ -250,7 +250,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 100,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A * 100 / 255'
             ],
             [
@@ -286,7 +286,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 1.275,
                 'data_bytes' => 2,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A / 200'
             ],
             [
@@ -300,7 +300,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 1.275,
                 'data_bytes' => 2,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A / 200'
             ],
             [
@@ -325,7 +325,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 65535,
                 'data_bytes' => 2,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => '(A * 256) + B'
             ],
             [
@@ -339,7 +339,7 @@ class SensorSeeder extends Seeder
                 'max_value' => 100,
                 'data_bytes' => 1,
                 'is_standard' => true,
-                'requires_calculation' => true,
+                'requires_calculation' => false,
                 'calculation_formula' => 'A * 100 / 255'
             ],
             [
