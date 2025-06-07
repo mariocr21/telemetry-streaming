@@ -94,7 +94,7 @@ class DeviceInventoryController extends Controller
      */
     public function show(DeviceInventory $deviceInventory): Response
     {
-        $deviceInventory->load(['clientDevices.client', 'clientDevices.vehicle']);
+        $deviceInventory->load(['clientDevices.client', 'clientDevices.vehicles']);
 
         return Inertia::render('DeviceInventory/Show', [
             'device' => [
@@ -123,14 +123,18 @@ class DeviceInventoryController extends Controller
                             'full_name' => $clientDevice->client->full_name,
                             'email' => $clientDevice->client->email,
                         ] : null,
-                        'vehicle' => $clientDevice->vehicle ? [
-                            'id' => $clientDevice->vehicle->id,
-                            'make' => $clientDevice->vehicle->make,
-                            'model' => $clientDevice->vehicle->model,
-                            'year' => $clientDevice->vehicle->year,
-                            'license_plate' => $clientDevice->vehicle->license_plate,
-                            'nickname' => $clientDevice->vehicle->nickname,
-                        ] : null,
+                        'vehicle' => $clientDevice->vehicles
+                            ? optional($clientDevice->vehicles->where('status', true)->first(), function ($vehicle) {
+                                return [
+                                    'id' => $vehicle->id,
+                                    'make' => $vehicle->make,
+                                    'model' => $vehicle->model,
+                                    'year' => $vehicle->year,
+                                    'license_plate' => $vehicle->license_plate,
+                                    'nickname' => $vehicle->nickname,
+                                ];
+                            })
+                            : null,
                     ];
                 }),
                 'can' => [

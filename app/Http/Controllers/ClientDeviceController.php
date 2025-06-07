@@ -60,9 +60,16 @@ class ClientDeviceController extends Controller
                                 'model' => $vehicle->model,
                                 'year' => $vehicle->year,
                                 'license_plate' => $vehicle->license_plate,
+                                'color' => $vehicle->color,
+                                'nickname' => $vehicle->nickname,
+                                'vin' => $vehicle->vin,
+                                'status' => $vehicle->status,
+                                'is_configured' => $vehicle->is_configured,
+                                'last_reading_at' => $vehicle->last_reading_at?->format('Y-m-d H:i:s'),
                             ];
                         })
                         : [],
+                    'vehicles_count' => $device->vehicles ? $device->vehicles->count() : 0,
 
                     'can' => [
                         'view' => true,
@@ -148,7 +155,16 @@ class ClientDeviceController extends Controller
             abort(404);
         }
 
-        $device->load(['DeviceInventory', 'vehicles']);
+        // Cargar el dispositivo con todas sus relaciones incluyendo múltiples vehículos
+        $device->load([
+            'DeviceInventory',
+            'vehicles' => function ($query) {
+                $query->with(['sensors' => function ($sensorQuery) {
+                    $sensorQuery->withPivot('is_active', 'frequency_seconds', 'last_reading_at');
+                }])
+                    ->orderBy('created_at', 'desc');
+            }
+        ]);
 
         return Inertia::render('Clients/Devices/Show', [
             'client' => [
@@ -184,9 +200,24 @@ class ClientDeviceController extends Controller
                             'model' => $vehicle->model,
                             'year' => $vehicle->year,
                             'license_plate' => $vehicle->license_plate,
+                            'color' => $vehicle->color,
+                            'nickname' => $vehicle->nickname,
+                            'vin' => $vehicle->vin,
+                            'protocol' => $vehicle->protocol,
+                            'status' => $vehicle->status,
+                            'auto_detected' => $vehicle->auto_detected,
+                            'is_configured' => $vehicle->is_configured,
+                            'first_reading_at' => $vehicle->first_reading_at?->format('Y-m-d H:i:s'),
+                            'last_reading_at' => $vehicle->last_reading_at?->format('Y-m-d H:i:s'),
+                            'created_at' => $vehicle->created_at->format('Y-m-d H:i:s'),
+                            'sensors_count' => $vehicle->sensors ? $vehicle->sensors->count() : 0,
+                            'active_sensors_count' => $vehicle->sensors ?
+                                $vehicle->sensors->where('pivot.is_active', true)->count() : 0,
+                            'supported_pids' => $vehicle->supported_pids,
                         ];
                     })
                     : [],
+                'vehicles_count' => $device->vehicles ? $device->vehicles->count() : 0,
 
                 'can' => [
                     'view' => true,

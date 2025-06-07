@@ -94,13 +94,24 @@ class VehicleRegistrationController extends Controller
                     ]);
 
                     $isNewVehicle = true;
+                    // Desactivar otros vehículos del mismo dispositivo
+                    Vehicle::where('client_device_id', $clientDevice->id)
+                        ->where('id', '!=', $vehicle->id)
+                        ->update(['status' => false]);
+                        
                     Log::info("Nuevo vehículo creado", ['vehicle_id' => $vehicle->id, 'vin' => $vin]);
                 } else {
                     // Actualizar vehículo existente
                     $vehicle->update([
                         'supported_pids' => $supportedPids,
+                        'status' => true,
                         'last_reading_at' => now()
                     ]);
+                    
+                    // desactivar los otros vehiculos del mismo dispositivo
+                    Vehicle::where('client_device_id', $clientDevice->id)
+                        ->where('id', '!=', $vehicle->id)
+                        ->update(['status' => false]);
 
                     Log::info("Vehículo actualizado", ['vehicle_id' => $vehicle->id, 'vin' => $vin]);
                 }

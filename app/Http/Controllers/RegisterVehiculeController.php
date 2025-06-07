@@ -48,7 +48,7 @@ class RegisterVehiculeController extends Controller
             $processedReadings = [];
 
             foreach ($data['s'] as $sensorHex => $sensorData) {
-                $vehicleSensor = VehicleSensor::wherehas('vehicle', function ($query) use ($data) {
+                $vehicleSensor = VehicleSensor::wherehas('vehicles', function ($query) use ($data) {
                     $query->where('vin', $data['idc']);
                 })
                     ->whereHas('sensor', function ($query) use ($sensorHex) {

@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 class Vehicle extends Model
 {
     /** @use HasFactory<\Database\Factories\VehicleFactory> */
     use HasFactory, SoftDeletes;
+    
     protected $fillable = [
         'client_id',
         'client_device_id',
@@ -33,10 +35,12 @@ class Vehicle extends Model
         'supported_pids' => 'json',
         'auto_detected' => 'boolean',
         'is_configured' => 'boolean',
+        'status' => 'boolean',
         'first_reading_at' => 'datetime',
         'last_reading_at' => 'datetime'
     ];
 
+    // Relaciones básicas
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -50,12 +54,68 @@ class Vehicle extends Model
     public function sensors()
     {
         return $this->belongsToMany(Sensor::class, 'vehicle_sensors')
-            ->withPivot('is_active', 'frequency_seconds', 'last_reading_at')
+            ->withPivot('is_active', 'frequency_seconds', 'min_value', 'max_value', 'last_reading_at')
             ->withTimestamps();
     }
 
     public function vehicleSensors()
     {
         return $this->hasMany(VehicleSensor::class);
+    }
+
+    // Scopes útiles
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', true);
+    }
+
+    public function scopeConfigured(Builder $query): Builder
+    {
+        return $query->where('is_configured', true);
+    }
+
+    public function scopeByDevice(Builder $query, $deviceId): Builder
+    {
+        return $query->where('client_device_id', $deviceId);
+    }
+
+    public function scopeByClient(Builder $query, $clientId): Builder
+    {
+        return $query->where('client_id', $clientId);
+    }
+
+    // Atributos computados
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->nickname) {
+            return "\"{$this->nickname}\"";
+        }
+
+        $parts = array_filter([
+            $this->make,
+            $this->model,
+            $this->year
+        ]);
+
+        return !empty($parts) ? implode(' ', $parts) : 'Vehículo #' . $this->id;
+    }
+
+    public function getIsOnlineAttribute(): bool
+    {
+        if (!$this->last_reading_at) {
+            return false;
+        }
+
+        return $this->last_reading_at->diffInMinutes(now()) < 30;
+    }
+
+    public function getActiveSensorsCountAttribute(): int
+    {
+        return $this->vehicleSensors()->where('is_active', true)->count();
+    }
+
+    public function getTotalSensorsCountAttribute(): int
+    {
+        return $this->vehicleSensors()->count();
     }
 }

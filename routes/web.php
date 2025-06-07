@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceInventoryController;
 use App\Http\Controllers\RegisterVehiculeController;
 use App\Http\Controllers\TelemetryController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,6 +29,46 @@ Route::prefix('clients/{client}')->middleware(['auth', 'verified'])->name('clien
         ->name('devices.activate');
     Route::post('devices/{device}/deactivate', [ClientDeviceController::class, 'deactivate'])
         ->name('devices.deactivate');
+
+
+    // Rutas anidadas para vehículos dentro de dispositivos
+    Route::prefix('devices/{device}')->name('devices.')->group(function () {
+
+        // Rutas CRUD para vehículos
+        Route::resource('vehicles', VehicleController::class)->parameters([
+            'vehicles' => 'vehicle'
+        ]);
+
+        // Rutas adicionales para vehículos
+        Route::prefix('vehicles/{vehicle}')->name('vehicles.')->group(function () {
+
+            // Configuración de sensores
+            Route::post('toggle-sensor', [VehicleController::class, 'toggleSensor'])
+                ->name('toggle-sensor');
+
+            Route::post('update-sensor-config', [VehicleController::class, 'updateSensorConfig'])
+                ->name('update-sensor-config');
+
+            // Datos para gráficos (AJAX)
+            Route::get('sensor-data', [VehicleController::class, 'getSensorData'])
+                ->name('sensor-data');
+
+            // Exportar datos
+            Route::get('export-data', [VehicleController::class, 'exportData'])
+                ->name('export-data');
+
+            // Activar/desactivar vehículo
+            Route::post('activate', [VehicleController::class, 'activate'])
+                ->name('activate');
+
+            Route::post('deactivate', [VehicleController::class, 'deactivate'])
+                ->name('deactivate');
+
+            // Forzar sincronización
+            Route::post('sync', [VehicleController::class, 'syncSensors'])
+                ->name('sync');
+        });
+    });
 });
 
 Route::get('/vehicle/{clientDevice}', [DashboardController::class, 'getDeviceVehicleActive'])
@@ -40,11 +81,11 @@ Route::prefix('telemetry')->group(function () {
     // Obtener últimos datos de telemetría
     Route::get('/latest/{vehicleId}', [RegisterVehiculeController::class, 'getLatestTelemetry'])
         ->name('telemetry.latest');
-    
+
     // Historial de telemetría
     Route::get('/history/{vehicleId}', [TelemetryController::class, 'getHistory'])
         ->name('telemetry.history');
-    
+
     // Estadísticas de telemetría
     Route::get('/stats/{vehicleId}', [TelemetryController::class, 'getStats'])
         ->name('telemetry.stats');
@@ -55,7 +96,7 @@ if (app()->environment('local')) {
         // Simular datos de telemetría
         Route::post('/simulate/{vehicleId}', [TelemetryController::class, 'simulateData'])
             ->name('test.simulate');
-        
+
         // Test WebSocket
         Route::post('/websocket/{vehicleId}', [TelemetryController::class, 'testWebSocket'])
             ->name('test.websocket');

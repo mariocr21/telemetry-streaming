@@ -10,25 +10,29 @@ import CardContent from '@/components/ui/CardContent.vue'
 import CardHeader from '@/components/ui/CardHeader.vue'
 import CardTitle from '@/components/ui/CardTitle.vue'
 import SimpleDropdown from '@/components/ui/SimpleDropdown.vue'
+
+// Importar componentes segmentados
+import DeviceInfo from '@/components/devices/DeviceInfo.vue'
+import DeviceHardware from '@/components/devices/DeviceHardware.vue'
+import DeviceConnectivity from '@/components/devices/DeviceConnectivity.vue'
+import DeviceVehiclesList from '@/components/devices/DeviceVehiclesList.vue'
+import DeviceSidebar from '@/components/devices/DeviceSidebar.vue'
+
 import { 
   ArrowLeft,
   Smartphone,
   Edit,
   Trash2,
   MoreVertical,
-  Cpu,
-  Hash,
   Wifi,
   WifiOff,
-  Calendar,
-  Clock,
   Car,
   Zap,
   Settings,
   CheckCircle2,
-  AlertCircle,
   Copy,
-  ExternalLink
+  Plus,
+  Activity
 } from 'lucide-vue-next'
 import type { BreadcrumbItem } from '@/types'
 
@@ -49,6 +53,19 @@ interface Vehicle {
   model: string
   year: number
   license_plate: string
+  color?: string
+  nickname?: string
+  vin?: string
+  protocol?: string
+  status?: string
+  auto_detected?: boolean
+  is_configured?: boolean
+  first_reading_at?: string
+  last_reading_at?: string
+  created_at: string
+  sensors_count?: number
+  active_sensors_count?: number
+  supported_pids?: any
 }
 
 interface Device {
@@ -62,7 +79,8 @@ interface Device {
   created_at: string
   updated_at: string
   device_inventory?: DeviceInventory
-  vehicle?: Vehicle
+  vehicles?: Vehicle[]
+  vehicles_count?: number
   can: {
     view: boolean
     update: boolean
@@ -86,36 +104,6 @@ const page = usePage()
 
 // Estado reactivo
 const copied = ref('')
-
-const deleteDevice = () => {
-  if (confirm(`¿Estás seguro de que deseas eliminar el dispositivo ${props.device.device_name}?`)) {
-    router.delete(route('clients.devices.destroy', [props.client.id, props.device.id]), {
-      onSuccess: () => {
-        router.visit(route('clients.devices.index', props.client.id))
-      }
-    })
-  }
-}
-
-const activateDevice = () => {
-  router.post(route('clients.devices.activate', [props.client.id, props.device.id]))
-}
-
-const deactivateDevice = () => {
-  router.post(route('clients.devices.deactivate', [props.client.id, props.device.id]))
-}
-
-const copyToClipboard = async (text: string, type: string) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    copied.value = type
-    setTimeout(() => {
-      copied.value = ''
-    }, 2000)
-  } catch (err) {
-    console.error('Error al copiar:', err)
-  }
-}
 
 // Computadas
 const flashMessage = computed(() => {
@@ -151,27 +139,6 @@ const deviceAge = computed(() => {
   }
 })
 
-const lastUpdated = computed(() => {
-  const updatedDate = new Date(props.device.updated_at)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - updatedDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return 'Hoy'
-  } else if (diffDays === 1) {
-    return 'Ayer'
-  } else if (diffDays < 7) {
-    return `Hace ${diffDays} días`
-  } else {
-    return updatedDate.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
-  }
-})
-
 const isOnline = computed(() => {
   if (!props.device.last_ping) return false
   
@@ -181,6 +148,77 @@ const isOnline = computed(() => {
   
   return diffMinutes < 10 // Consideramos online si el último ping fue hace menos de 10 minutos
 })
+
+const vehiclesSummary = computed(() => {
+  const vehicles = props.device.vehicles || []
+  const totalVehicles = vehicles.length
+  const configuredVehicles = vehicles.filter(v => v.is_configured).length
+  const activeVehicles = vehicles.filter(v => v.status === 'configured').length
+  const recentActivity = vehicles.filter(v => {
+    if (!v.last_reading_at) return false
+    const lastReading = new Date(v.last_reading_at)
+    const now = new Date()
+    const diffHours = (now.getTime() - lastReading.getTime()) / (1000 * 60 * 60)
+    return diffHours < 24
+  }).length
+
+  return {
+    total: totalVehicles,
+    configured: configuredVehicles,
+    active: activeVehicles,
+    recentActivity
+  }
+})
+
+// Métodos de eventos
+const copyToClipboard = async (text: string, type: string) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    copied.value = type
+    setTimeout(() => {
+      copied.value = ''
+    }, 2000)
+  } catch (err) {
+    console.error('Error al copiar:', err)
+  }
+}
+
+const deleteDevice = () => {
+  if (confirm(`¿Estás seguro de que deseas eliminar el dispositivo ${props.device.device_name}?`)) {
+    router.delete(route('clients.devices.destroy', [props.client.id, props.device.id]), {
+      onSuccess: () => {
+        router.visit(route('clients.devices.index', props.client.id))
+      }
+    })
+  }
+}
+
+const activateDevice = () => {
+  router.post(route('clients.devices.activate', [props.client.id, props.device.id]))
+}
+
+const deactivateDevice = () => {
+  router.post(route('clients.devices.deactivate', [props.client.id, props.device.id]))
+}
+
+// Métodos para manejar vehículos
+const handleEditVehicle = (vehicleId: number) => {
+  router.visit(route('clients.devices.vehicles.edit', [props.client.id, props.device.id, vehicleId]))
+}
+
+const handleDeleteVehicle = (vehicleId: number) => {
+  if (confirm('¿Estás seguro de que deseas desvincular este vehículo?')) {
+    router.delete(route('clients.devices.vehicles.destroy', [props.client.id, props.device.id, vehicleId]))
+  }
+}
+
+const handleConfigureSensors = (vehicleId: number) => {
+  router.visit(route('clients.devices.vehicles.sensors', [props.client.id, props.device.id, vehicleId]))
+}
+
+const handleAddVehicle = () => {
+  router.visit(route('clients.devices.vehicles.create', [props.client.id, props.device.id]))
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Clientes', href: '/clients' },
@@ -227,6 +265,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <div v-else class="flex items-center space-x-1 text-gray-400">
                   <WifiOff class="h-4 w-4" />
                   <span class="text-sm">Desconectado</span>
+                </div>
+                <div v-if="device.vehicles_count" class="flex items-center space-x-1 text-blue-600">
+                  <Car class="h-4 w-4" />
+                  <span class="text-sm">{{ device.vehicles_count }} vehículo{{ device.vehicles_count > 1 ? 's' : '' }}</span>
                 </div>
               </div>
             </div>
@@ -330,221 +372,87 @@ const breadcrumbs: BreadcrumbItem[] = [
           </div>
         </div>
 
+        <!-- Resumen de Vehículos -->
+        <div v-if="device.vehicles_count && device.vehicles_count > 0" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
+                <Car class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Vehículos</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ vehiclesSummary.total }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/20">
+                <CheckCircle2 class="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Configurados</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ vehiclesSummary.configured }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/20">
+                <Zap class="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Activos</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ vehiclesSummary.active }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div class="flex items-center">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/20">
+                <Activity class="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Actividad Reciente</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ vehiclesSummary.recentActivity }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Contenido principal -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <!-- Columna principal -->
           <div class="space-y-6 lg:col-span-2">
             <!-- Información del Dispositivo -->
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center text-lg">
-                  <Smartphone class="mr-2 h-5 w-5 text-blue-600" />
-                  Información del Dispositivo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Nombre del Dispositivo</h4>
-                      <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {{ device.device_name }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Dirección MAC</h4>
-                      <div class="flex items-center space-x-2">
-                        <Hash class="h-4 w-4 text-gray-400" />
-                        <span class="font-mono font-medium text-gray-900 dark:text-gray-100">
-                          {{ device.mac_address }}
-                        </span>
-                        <button
-                          @click="copyToClipboard(device.mac_address, 'mac')"
-                          class="rounded p-1 text-gray-400 hover:text-gray-600"
-                          title="Copiar MAC"
-                        >
-                          <Copy class="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Estado</h4>
-                      <Badge :class="getStatusBadge(device.status).class" class="text-base px-3 py-1">
-                        {{ getStatusBadge(device.status).text }}
-                      </Badge>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Cliente</h4>
-                      <Link
-                        :href="route('clients.show', client.id)"
-                        class="flex items-center space-x-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        <span class="font-medium">{{ client.full_name }}</span>
-                        <ExternalLink class="h-3 w-3" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DeviceInfo 
+              :device="device" 
+              :client="client" 
+              @copy-to-clipboard="copyToClipboard" 
+            />
 
             <!-- Información del Hardware -->
-            <Card v-if="device.device_inventory">
-              <CardHeader>
-                <CardTitle class="flex items-center text-lg">
-                  <Cpu class="mr-2 h-5 w-5 text-purple-600" />
-                  Información del Hardware
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</h4>
-                      <p class="font-semibold text-gray-900 dark:text-gray-100">
-                        {{ device.device_inventory.model }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Número de Serie</h4>
-                      <p class="font-mono text-gray-900 dark:text-gray-100">
-                        {{ device.device_inventory.serial_number }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">UUID del Dispositivo</h4>
-                      <p class="font-mono text-sm text-gray-900 dark:text-gray-100">
-                        {{ device.device_inventory.device_uuid }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Versión de Hardware</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ device.device_inventory.hardware_version }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Versión de Firmware</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ device.device_inventory.firmware_version }}
-                      </p>
-                    </div>
-
-                    <div v-if="device.device_inventory.manufactured_date">
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de Fabricación</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ new Date(device.device_inventory.manufactured_date).toLocaleDateString('es-ES') }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DeviceHardware 
+              v-if="device.device_inventory" 
+              :device-inventory="device.device_inventory" 
+            />
 
             <!-- Estado de Conectividad -->
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center text-lg">
-                  <Wifi class="mr-2 h-5 w-5 text-green-600" />
-                  Estado de Conectividad
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Estado de Conexión</h4>
-                      <div class="flex items-center space-x-2">
-                        <div v-if="isOnline" class="flex items-center space-x-2 text-green-600">
-                          <Wifi class="h-5 w-5" />
-                          <span class="font-medium">En línea</span>
-                        </div>
-                        <div v-else class="flex items-center space-x-2 text-gray-400">
-                          <WifiOff class="h-5 w-5" />
-                          <span class="font-medium">Desconectado</span>
-                        </div>
-                      </div>
-                    </div>
+            <DeviceConnectivity :device="device" />
 
-                    <div v-if="device.last_ping">
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Último Ping</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ new Date(device.last_ping).toLocaleString('es-ES') }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="space-y-4">
-                    <div v-if="device.activated_at">
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de Activación</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ new Date(device.activated_at).toLocaleString('es-ES') }}
-                      </p>
-                    </div>
-
-                    <div v-if="device.status === 'pending'">
-                      <div class="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
-                        <div class="flex items-center space-x-2">
-                          <AlertCircle class="h-5 w-5 text-yellow-600" />
-                          <span class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                            El dispositivo está pendiente de activación
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <!-- Vehículo Asociado -->
-            <Card v-if="device.vehicle">
-              <CardHeader>
-                <CardTitle class="flex items-center text-lg">
-                  <Car class="mr-2 h-5 w-5 text-orange-600" />
-                  Vehículo Asociado
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Marca y Modelo</h4>
-                      <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {{ device.vehicle.make }} {{ device.vehicle.model }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Año</h4>
-                      <p class="font-medium text-gray-900 dark:text-gray-100">
-                        {{ device.vehicle.year }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="space-y-4">
-                    <div>
-                      <h4 class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Placa</h4>
-                      <p class="font-mono font-medium text-gray-900 dark:text-gray-100">
-                        {{ device.vehicle.license_plate }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <!-- Lista de Vehículos Asociados -->
+            <DeviceVehiclesList 
+              :vehicles="device.vehicles || []"
+              :client="client"
+              :device="device"
+              @edit-vehicle="handleEditVehicle"
+              @delete-vehicle="handleDeleteVehicle"
+              @configure-sensors="handleConfigureSensors"
+              @add-vehicle="handleAddVehicle"
+            />
 
             <!-- Configuración Adicional -->
             <Card v-if="device.device_config">
@@ -562,168 +470,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
           <!-- Sidebar -->
           <div class="space-y-6">
-            <!-- Acciones Rápidas -->
-            <Card>
-              <CardHeader>
-                <CardTitle class="text-lg">Acciones Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent class="space-y-3">
-                <Link v-if="device.can?.update" :href="route('clients.devices.edit', [client.id, device.id])">
-                  <Button class="w-full justify-start" variant="outline">
-                    <Edit class="mr-2 h-4 w-4" />
-                    Editar Dispositivo
-                  </Button>
-                </Link>
-
-                <Button
-                  @click="copyToClipboard(device.mac_address, 'mac')"
-                  class="w-full justify-start"
-                  variant="outline"
-                >
-                  <Copy class="mr-2 h-4 w-4" />
-                  Copiar MAC
-                </Button>
-
-                <Button
-                  v-if="device.status === 'pending' || device.status === 'inactive'"
-                  @click="activateDevice"
-                  class="w-full justify-start text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20"
-                  variant="outline"
-                >
-                  <Zap class="mr-2 h-4 w-4" />
-                  Activar Dispositivo
-                </Button>
-
-                <Button
-                  v-if="device.status === 'active'"
-                  @click="deactivateDevice"
-                  class="w-full justify-start text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-900/20"
-                  variant="outline"
-                >
-                  <Settings class="mr-2 h-4 w-4" />
-                  Desactivar Dispositivo
-                </Button>
-
-                <div v-if="device.can?.delete" class="border-t border-gray-200 pt-3 dark:border-gray-700">
-                  <Button
-                    @click="deleteDevice"
-                    class="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-                    variant="outline"
-                  >
-                    <Trash2 class="mr-2 h-4 w-4" />
-                    Eliminar Dispositivo
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <!-- Información del Sistema -->
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center text-lg">
-                  <Clock class="mr-2 h-5 w-5 text-gray-600" />
-                  Información del Sistema
-                </CardTitle>
-              </CardHeader>
-              <CardContent class="space-y-4">
-                <div>
-                  <h4 class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">ID del Dispositivo</h4>
-                  <p class="rounded bg-gray-100 px-2 py-1 font-mono text-sm dark:bg-gray-800">#{{ device.id }}</p>
-                </div>
-
-                <div>
-                  <h4 class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de Registro</h4>
-                  <div class="flex items-center space-x-2">
-                    <Calendar class="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p class="font-medium">
-                        {{ new Date(device.created_at).toLocaleDateString('es-ES', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) }}
-                      </p>
-                      <p class="text-sm text-gray-500">
-                        {{ new Date(device.created_at).toLocaleTimeString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Última Actualización</h4>
-                  <div class="flex items-center space-x-2">
-                    <Clock class="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p class="font-medium">{{ lastUpdated }}</p>
-                      <p class="text-sm text-gray-500">
-                        {{ new Date(device.updated_at).toLocaleTimeString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="border-t border-gray-200 pt-3 dark:border-gray-700">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-500">Tiempo registrado</span>
-                    <Badge variant="secondary">{{ deviceAge }}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <!-- Estado del Dispositivo -->
-            <Card>
-              <CardHeader>
-                <CardTitle class="text-lg">Estado del Dispositivo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Configuración básica</span>
-                    <CheckCircle2 class="h-4 w-4 text-green-500" />
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Hardware asignado</span>
-                    <CheckCircle2 v-if="device.device_inventory" class="h-4 w-4 text-green-500" />
-                    <AlertCircle v-else class="h-4 w-4 text-amber-500" />
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Estado de activación</span>
-                    <CheckCircle2 v-if="device.status === 'active'" class="h-4 w-4 text-green-500" />
-                    <AlertCircle v-else-if="device.status === 'pending'" class="h-4 w-4 text-yellow-500" />
-                    <AlertCircle v-else class="h-4 w-4 text-red-500" />
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Conectividad</span>
-                    <CheckCircle2 v-if="isOnline" class="h-4 w-4 text-green-500" />
-                    <AlertCircle v-else class="h-4 w-4 text-gray-400" />
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Vehículo asignado</span>
-                    <CheckCircle2 v-if="device.vehicle" class="h-4 w-4 text-green-500" />
-                    <AlertCircle v-else class="h-4 w-4 text-gray-400" />
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm">Configuración avanzada</span>
-                    <CheckCircle2 v-if="device.device_config" class="h-4 w-4 text-green-500" />
-                    <AlertCircle v-else class="h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DeviceSidebar 
+              :device="device"
+              :client="client"
+              :is-online="isOnline"
+              @copy-to-clipboard="copyToClipboard"
+              @activate-device="activateDevice"
+              @deactivate-device="deactivateDevice"
+              @delete-device="deleteDevice"
+              @add-vehicle="handleAddVehicle"
+            />
           </div>
         </div>
       </div>
