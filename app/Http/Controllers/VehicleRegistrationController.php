@@ -49,7 +49,7 @@ class VehicleRegistrationController extends Controller
 
             // Buscar el dispositivo por serial number
             $deviceInventory = DeviceInventory::where('serial_number', $deviceSerial)->first();
-            
+
             if (!$deviceInventory) {
                 Log::warning("Dispositivo no encontrado", ['serial' => $deviceSerial]);
                 return response()->json([
@@ -60,7 +60,7 @@ class VehicleRegistrationController extends Controller
 
             // Buscar el dispositivo del cliente asociado
             $clientDevice = ClientDevice::where('device_inventory_id', $deviceInventory->id)->first();
-            
+
             if (!$clientDevice) {
                 Log::warning("Dispositivo no asignado a cliente", ['device_id' => $deviceInventory->id]);
                 return response()->json([
@@ -98,7 +98,7 @@ class VehicleRegistrationController extends Controller
                     Vehicle::where('client_device_id', $clientDevice->id)
                         ->where('id', '!=', $vehicle->id)
                         ->update(['status' => false]);
-                        
+
                     Log::info("Nuevo vehículo creado", ['vehicle_id' => $vehicle->id, 'vin' => $vin]);
                 } else {
                     // Actualizar vehículo existente
@@ -107,7 +107,7 @@ class VehicleRegistrationController extends Controller
                         'status' => true,
                         'last_reading_at' => now()
                     ]);
-                    
+
                     // desactivar los otros vehiculos del mismo dispositivo
                     Vehicle::where('client_device_id', $clientDevice->id)
                         ->where('id', '!=', $vehicle->id)
@@ -150,12 +150,10 @@ class VehicleRegistrationController extends Controller
                         ]
                     ]
                 ], 200);
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-
         } catch (\Exception $e) {
             Log::error("Error en registro de vehículo", [
                 'error' => $e->getMessage(),
@@ -184,30 +182,48 @@ class VehicleRegistrationController extends Controller
         // Obtener sensores existentes que coincidan con los PIDs
         $existingSensors = Sensor::whereIn('pid', $supportedPids)->get()->keyBy('pid');
 
-        // Obtener sensores ya vinculados al vehículo
+        // Obtener TODOS los sensores vinculados al vehículo (activos e inactivos)
         $existingVehicleSensors = VehicleSensor::where('vehicle_id', $vehicle->id)
             ->with('sensor')
             ->get()
             ->keyBy('sensor.pid');
 
+        // PASO 1: Desactivar TODOS los sensores del vehículo primero
+        VehicleSensor::where('vehicle_id', $vehicle->id)
+            ->update(['is_active' => false]);
+
+        // PASO 2: Procesar PIDs soportados
         foreach ($supportedPids as $pid) {
             if (isset($existingSensors[$pid])) {
                 $sensor = $existingSensors[$pid];
 
-                // Verificar si ya está vinculado al vehículo
-                if (!isset($existingVehicleSensors[$pid])) {
-                    // Crear nueva vinculación
+                if (isset($existingVehicleSensors[$pid])) {
+                    // El sensor ya existe - REACTIVARLO
+                    $existingVehicleSensors[$pid]->update([
+                        'is_active' => true,
+                        'frequency_seconds' => 5, // Actualizar frecuencia si es necesario
+                        'min_value' => $sensor->min_value,
+                        'max_value' => $sensor->max_value
+                    ]);
+
+                    Log::info("Sensor reactivado", [
+                        'vehicle_id' => $vehicle->id,
+                        'sensor_pid' => $pid,
+                        'sensor_name' => $sensor->name
+                    ]);
+                } else {
+                    // Sensor nuevo - CREARLO
                     VehicleSensor::create([
                         'vehicle_id' => $vehicle->id,
                         'sensor_id' => $sensor->id,
                         'is_active' => true,
-                        'frequency_seconds' => 5, // Frecuencia por defecto
+                        'frequency_seconds' => 5,
                         'min_value' => $sensor->min_value,
                         'max_value' => $sensor->max_value
                     ]);
 
                     $result['new']++;
-                    Log::info("Sensor vinculado al vehículo", [
+                    Log::info("Nuevo sensor vinculado al vehículo", [
                         'vehicle_id' => $vehicle->id,
                         'sensor_pid' => $pid,
                         'sensor_name' => $sensor->name
@@ -221,9 +237,6 @@ class VehicleRegistrationController extends Controller
                 Log::warning("PID no reconocido", ['pid' => $pid, 'vehicle_id' => $vehicle->id]);
             }
         }
-
-        // Desactivar sensores que ya no están soportados
-        $this->deactivateUnsupportedSensors($vehicle, $supportedPids);
 
         return $result;
     }
@@ -272,7 +285,7 @@ class VehicleRegistrationController extends Controller
 
             // Buscar dispositivo y vehículo asociado
             $deviceInventory = DeviceInventory::where('serial_number', $deviceSerial)->first();
-            
+
             if (!$deviceInventory) {
                 return response()->json([
                     'success' => false,
@@ -281,7 +294,7 @@ class VehicleRegistrationController extends Controller
             }
 
             $clientDevice = ClientDevice::where('device_inventory_id', $deviceInventory->id)->first();
-            
+
             if (!$clientDevice) {
                 return response()->json([
                     'success' => false,
@@ -336,7 +349,6 @@ class VehicleRegistrationController extends Controller
                     'sensors' => $activeSensors
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             Log::error("Error obteniendo información del vehículo", [
                 'error' => $e->getMessage(),
