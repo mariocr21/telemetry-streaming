@@ -59,4 +59,17 @@ class Register extends Model
             'sensor_id' // Local key en vehicle_sensors
         );
     }
+
+    // AGREGADO: Scopes para el DashboardController
+    public function scopeForVehicle($query, $vehicleId)
+    {
+        return $query->whereHas('sensor', function($q) use ($vehicleId) {
+            $q->where('vehicle_id', $vehicleId);
+        });
+    }
+
+    public function scopeRecent($query, $hours = 24)
+    {
+        return $query->where('recorded_at', '>=', now()->subHours($hours));
+    }
 }
