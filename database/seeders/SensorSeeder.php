@@ -432,8 +432,6 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => true,
-                'calculation_formula' => 'FC_LH',
-                'precision' => 2
             ],
             [
                 'pid' => 'MI_KL',
@@ -447,8 +445,6 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => true,
-                'calculation_formula' => 'MI_KL',
-                'precision' => 2
             ]
 
         ];
