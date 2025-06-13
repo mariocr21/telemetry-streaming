@@ -107,6 +107,23 @@ class RegisterVehiculeController extends Controller
                 300 // 5 minutos
             );
 
+            //Actualizar el estatus de los sensores
+            // Obtener los IDs de los VehicleSensor que se usaron
+            $vehicleSensorIds = VehicleSensor::whereHas('vehicle', function ($query) use ($data) {
+                $query->where('vin', $data['idc']);
+                })
+                ->whereHas('sensor', function ($query) use ($telemetryData) {
+                $query->whereIn('pid', array_keys($telemetryData));
+                })
+                ->pluck('id');
+
+            // Actualizar todos los sensores en una sola consulta
+            VehicleSensor::whereIn('id', $vehicleSensorIds)
+                ->update([
+                'is_active' => true,
+                'last_reading_at' => now(),
+                ]);
+
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             return response()->json([

@@ -419,6 +419,36 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => false
+            ],
+            [
+                'pid' => 'FC_LH',
+                'name' => 'Fuel Consumption',
+                'description' => 'Consumo en litros por hora',
+                'category' => 'fuel',
+                'unit' => 'L/h',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => null,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => true,
+                'calculation_formula' => 'FC_LH',
+                'precision' => 2
+            ],
+            [
+                'pid' => 'MI_KL',
+                'name' => 'Fuel Efficiency',
+                'description' => 'Rendimiento en kilómetros por litro',
+                'category' => 'fuel',
+                'unit' => 'km/L',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => null,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => true,
+                'calculation_formula' => 'MI_KL',
+                'precision' => 2
             ]
 
         ];
