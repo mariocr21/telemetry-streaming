@@ -445,6 +445,19 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => true,
+            ],
+            [
+                'pid' => 'TL_C',
+                'name' => 'Total Liters Consumed',
+                'description' => 'Total de litros de combustible consumidos',
+                'category' => 'fuel',
+                'unit' => 'L',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => null,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => false,
             ]
 
         ];
