@@ -458,8 +458,48 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => false,
-            ]
-
+            ],
+            [
+                'pid' => 'MI_L100',
+                'name' => 'L/100km',
+                'description' => 'Consumo de combustible en litros por 100 kilómetros',
+                'category' => 'fuel',
+                'unit' => 'L/100km',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => null,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => true,
+            ],
+            [
+                'pid' => 'MI_MPG',
+                'name' => 'mpg (US)',
+                'description' => 'Eficiencia de combustible en millas por galón',
+                'category' => 'fuel',
+                'unit' => 'mpg',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => null,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => true,
+                'widget_type' => 'trend_line',
+                'window_min' => 5
+            ],
+            [
+                'pid' => 'FC_SRC',
+                'name' => 'Fuente FC',
+                'description' => 'Fuente del cálculo de consumo de combustible',
+                'category' => 'fuel',
+                'unit' => '',
+                'data_type' => 'mapped',
+                'min_value' => null,
+                'max_value' => null,
+                'data_bytes' => 1,
+                'is_standard' => false,
+                'requires_calculation' => false,
+            ],
         ];
 
         foreach ($sensors as $sensorData) {
