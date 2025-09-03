@@ -484,8 +484,6 @@ class SensorSeeder extends Seeder
                 'data_bytes' => 4,
                 'is_standard' => false,
                 'requires_calculation' => true,
-                'widget_type' => 'trend_line',
-                'window_min' => 5
             ],
             [
                 'pid' => 'FC_SRC',
