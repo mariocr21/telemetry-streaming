@@ -172,7 +172,9 @@ class DeviceInventoryController extends Controller
      */
     public function update(UpdateDeviceInventoryRequest $request, DeviceInventory $deviceInventory)
     {
-        $deviceInventory->update($request->validated());
+        $data = $request->validated();
+
+        $deviceInventory->update($data);
 
         return redirect()->route('device-inventory.show', $deviceInventory)
             ->with('message', 'Dispositivo actualizado exitosamente.');
