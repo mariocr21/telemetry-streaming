@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -146,6 +146,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/clients',
   },
 ];
+
+onMounted(() => {
+  // check if user role is SA
+  const user = (page.props as any).auth.user;
+  if (user.role !== 'SA') {
+    router.visit('/dashboard');
+  }
+})
 </script>
 
 <template>

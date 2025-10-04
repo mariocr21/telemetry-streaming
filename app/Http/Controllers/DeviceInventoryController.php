@@ -5,23 +5,39 @@ namespace App\Http\Controllers;
 use App\Models\DeviceInventory;
 use App\Http\Requests\StoreDeviceInventoryRequest;
 use App\Http\Requests\UpdateDeviceInventoryRequest;
+use App\UserRole;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DeviceInventoryController extends Controller
 {
     /**
+     * Verificar que el usuario sea Super Admin
+     */
+    private function ensureSuperAdmin(): void
+    {
+        $user = Auth::user();
+
+        if ($user->role !== UserRole::SUPER_ADMIN) {
+            abort(403, 'Solo los Super Administradores pueden acceder al inventario de dispositivos.');
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response
     {
+        $this->ensureSuperAdmin();
+
         $devices = DeviceInventory::query()
             ->withCount('clientDevices')
             ->when($request->search, function ($query, $search) {
                 $query->where('serial_number', 'like', "%{$search}%")
-                      ->orWhere('device_uuid', 'like', "%{$search}%")
-                      ->orWhere('model', 'like', "%{$search}%");
+                    ->orWhere('device_uuid', 'like', "%{$search}%")
+                    ->orWhere('model', 'like', "%{$search}%");
             })
             ->when($request->status, function ($query, $status) {
                 $query->where('status', $status);
@@ -56,7 +72,7 @@ class DeviceInventoryController extends Controller
                     'can' => [
                         'view' => true,
                         'update' => true,
-                        'delete' => $device->client_devices_count === 0, // Solo se puede eliminar si no está asignado
+                        'delete' => $device->client_devices_count === 0,
                     ]
                 ];
             }),
@@ -75,6 +91,8 @@ class DeviceInventoryController extends Controller
      */
     public function create(): Response
     {
+        $this->ensureSuperAdmin();
+
         return Inertia::render('DeviceInventory/Create');
     }
 
@@ -83,6 +101,8 @@ class DeviceInventoryController extends Controller
      */
     public function store(StoreDeviceInventoryRequest $request)
     {
+        $this->ensureSuperAdmin();
+
         $device = DeviceInventory::create($request->validated());
 
         return redirect()->route('device-inventory.index')
@@ -94,6 +114,8 @@ class DeviceInventoryController extends Controller
      */
     public function show(DeviceInventory $deviceInventory): Response
     {
+        $this->ensureSuperAdmin();
+
         $deviceInventory->load(['clientDevices.client', 'clientDevices.vehicles']);
 
         return Inertia::render('DeviceInventory/Show', [
@@ -151,6 +173,8 @@ class DeviceInventoryController extends Controller
      */
     public function edit(DeviceInventory $deviceInventory): Response
     {
+        $this->ensureSuperAdmin();
+
         return Inertia::render('DeviceInventory/Edit', [
             'device' => [
                 'id' => $deviceInventory->id,
@@ -172,6 +196,8 @@ class DeviceInventoryController extends Controller
      */
     public function update(UpdateDeviceInventoryRequest $request, DeviceInventory $deviceInventory)
     {
+        $this->ensureSuperAdmin();
+
         $data = $request->validated();
 
         $deviceInventory->update($data);
@@ -185,6 +211,8 @@ class DeviceInventoryController extends Controller
      */
     public function destroy(DeviceInventory $deviceInventory)
     {
+        $this->ensureSuperAdmin();
+
         // Verificar que no tenga dispositivos de clientes asignados
         if ($deviceInventory->clientDevices()->count() > 0) {
             return back()->withErrors([
@@ -203,6 +231,8 @@ class DeviceInventoryController extends Controller
      */
     public function stats()
     {
+        $this->ensureSuperAdmin();
+
         $stats = [
             'total' => DeviceInventory::count(),
             'available' => DeviceInventory::where('status', 'available')->count(),
@@ -220,6 +250,8 @@ class DeviceInventoryController extends Controller
      */
     public function bulkUpdateStatus(Request $request)
     {
+        $this->ensureSuperAdmin();
+
         $request->validate([
             'device_ids' => 'required|array',
             'device_ids.*' => 'exists:device_inventories,id',

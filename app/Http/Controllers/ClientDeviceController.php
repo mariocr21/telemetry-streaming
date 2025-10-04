@@ -7,17 +7,42 @@ use App\Models\ClientDevice;
 use App\Models\DeviceInventory;
 use App\Http\Requests\StoreClientDeviceRequest;
 use App\Http\Requests\UpdateClientDeviceRequest;
+use App\UserRole;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ClientDeviceController extends Controller
 {
     /**
+     * Verificar si el usuario tiene acceso al cliente
+     */
+    private function canAccessClient(Client $client): bool
+    {
+        $user = Auth::user();
+
+        // Si es SA, tiene acceso a todo
+        if ($user->role === UserRole::SUPER_ADMIN) {
+            return true;
+        }
+
+        // Si no es SA, solo puede acceder a su propio cliente
+        return $user->client_id === $client->id;
+    }
+
+    /**
      * Display a listing of the client's devices.
      */
     public function index(Client $client): Response
     {
+        $user = Auth::user();
+
+        // Verificar permisos de acceso
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para ver los dispositivos de este cliente.');
+        }
+
         $devices = $client->devices()
             ->with(['DeviceInventory', 'vehicles'])
             ->when(request('search'), function ($query, $search) {
@@ -28,13 +53,16 @@ class ClientDeviceController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $isSuperAdmin = $user->role === UserRole::SUPER_ADMIN;
+        $isClientAdmin = $user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id;
+
         return Inertia::render('Clients/Devices/Index', [
             'client' => [
                 'id' => $client->id,
                 'full_name' => $client->full_name,
                 'email' => $client->email,
             ],
-            'devices' => $devices->through(function ($device) {
+            'devices' => $devices->through(function ($device) use ($isSuperAdmin, $isClientAdmin) {
                 return [
                     'id' => $device->id,
                     'device_name' => $device->device_name,
@@ -70,17 +98,16 @@ class ClientDeviceController extends Controller
                         })
                         : [],
                     'vehicles_count' => $device->vehicles ? $device->vehicles->count() : 0,
-
                     'can' => [
                         'view' => true,
-                        'update' => true,
-                        'delete' => true,
+                        'update' => $isSuperAdmin || $isClientAdmin,
+                        'delete' => $isSuperAdmin || $isClientAdmin,
                     ]
                 ];
             }),
             'filters' => request()->only(['search']),
             'can' => [
-                'create_device' => true,
+                'create_device' => $isSuperAdmin ,
             ]
         ]);
     }
@@ -90,6 +117,21 @@ class ClientDeviceController extends Controller
      */
     public function create(Client $client): Response
     {
+        $user = Auth::user();
+
+        // Verificar permisos de acceso
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para crear dispositivos para este cliente.');
+        }
+
+        // Solo SA o CA del mismo cliente pueden crear dispositivos
+        $canCreate = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canCreate) {
+            abort(403, 'No tienes permiso para crear dispositivos.');
+        }
+
         $availableDevices = DeviceInventory::where('status', 'available')
             ->orderBy('model')
             ->orderBy('serial_number')
@@ -121,6 +163,20 @@ class ClientDeviceController extends Controller
      */
     public function store(StoreClientDeviceRequest $request, Client $client)
     {
+        $user = Auth::user();
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para crear dispositivos para este cliente.');
+        }
+
+        $canCreate = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canCreate) {
+            abort(403, 'No tienes permiso para crear dispositivos.');
+        }
+
         $deviceInventory = DeviceInventory::findOrFail($request->device_inventory_id);
 
         // Verificar que el dispositivo esté disponible
@@ -134,7 +190,7 @@ class ClientDeviceController extends Controller
             'device_inventory_id' => $request->device_inventory_id,
             'device_name' => $request->device_name,
             'mac_address' => $request->mac_address,
-            'status' => 'pending', // Estado inicial
+            'status' => 'pending',
             'device_config' => $request->device_config ? json_decode($request->device_config, true) : null,
         ]);
 
@@ -150,12 +206,19 @@ class ClientDeviceController extends Controller
      */
     public function show(Client $client, ClientDevice $device): Response
     {
+        $user = Auth::user();
+
         // Verificar que el dispositivo pertenece al cliente
         if ($device->client_id !== $client->id) {
             abort(404);
         }
 
-        // Cargar el dispositivo con todas sus relaciones incluyendo múltiples vehículos
+        // Verificar permisos de acceso
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para ver este dispositivo.');
+        }
+
+        // Cargar el dispositivo con todas sus relaciones
         $device->load([
             'DeviceInventory',
             'vehicles' => function ($query) {
@@ -165,6 +228,9 @@ class ClientDeviceController extends Controller
                     ->orderBy('created_at', 'desc');
             }
         ]);
+
+        $isSuperAdmin = $user->role === UserRole::SUPER_ADMIN;
+        $isClientAdmin = $user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id;
 
         return Inertia::render('Clients/Devices/Show', [
             'client' => [
@@ -218,11 +284,10 @@ class ClientDeviceController extends Controller
                     })
                     : [],
                 'vehicles_count' => $device->vehicles ? $device->vehicles->count() : 0,
-
                 'can' => [
                     'view' => true,
-                    'update' => true,
-                    'delete' => true,
+                    'update' => $isSuperAdmin || $isClientAdmin,
+                    'delete' => $isSuperAdmin || $isClientAdmin,
                 ]
             ],
         ]);
@@ -233,9 +298,24 @@ class ClientDeviceController extends Controller
      */
     public function edit(Client $client, ClientDevice $device): Response
     {
+        $user = Auth::user();
+
         // Verificar que el dispositivo pertenece al cliente
         if ($device->client_id !== $client->id) {
             abort(404);
+        }
+
+        // Verificar permisos de acceso
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para editar este dispositivo.');
+        }
+
+        // Solo SA o CA del mismo cliente pueden editar
+        $canEdit = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canEdit) {
+            abort(403, 'No tienes permiso para editar este dispositivo.');
         }
 
         $device->load('DeviceInventory');
@@ -270,9 +350,23 @@ class ClientDeviceController extends Controller
      */
     public function update(UpdateClientDeviceRequest $request, Client $client, ClientDevice $device)
     {
+        $user = Auth::user();
+
         // Verificar que el dispositivo pertenece al cliente
         if ($device->client_id !== $client->id) {
             abort(404);
+        }
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para actualizar este dispositivo.');
+        }
+
+        $canEdit = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canEdit) {
+            abort(403, 'No tienes permiso para actualizar este dispositivo.');
         }
 
         $device->update([
@@ -291,9 +385,24 @@ class ClientDeviceController extends Controller
      */
     public function destroy(Client $client, ClientDevice $device)
     {
+        $user = Auth::user();
+
         // Verificar que el dispositivo pertenece al cliente
         if ($device->client_id !== $client->id) {
             abort(404);
+        }
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para eliminar este dispositivo.');
+        }
+
+        // Solo SA o CA del mismo cliente pueden eliminar
+        $canDelete = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canDelete) {
+            abort(403, 'No tienes permiso para eliminar este dispositivo.');
         }
 
         // Liberar el dispositivo en inventario
@@ -312,8 +421,22 @@ class ClientDeviceController extends Controller
      */
     public function activate(Client $client, ClientDevice $device)
     {
+        $user = Auth::user();
+
         if ($device->client_id !== $client->id) {
             abort(404);
+        }
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para activar este dispositivo.');
+        }
+
+        $canActivate = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canActivate) {
+            abort(403, 'No tienes permiso para activar este dispositivo.');
         }
 
         $device->update([
@@ -330,8 +453,22 @@ class ClientDeviceController extends Controller
      */
     public function deactivate(Client $client, ClientDevice $device)
     {
+        $user = Auth::user();
+
         if ($device->client_id !== $client->id) {
             abort(404);
+        }
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para desactivar este dispositivo.');
+        }
+
+        $canDeactivate = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canDeactivate) {
+            abort(403, 'No tienes permiso para desactivar este dispositivo.');
         }
 
         $device->update([

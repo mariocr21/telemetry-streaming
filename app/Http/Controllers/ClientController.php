@@ -7,17 +7,45 @@ use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Http\Resources\ClientResource;
 use App\Models\User;
+use App\UserRole; // ← Importar el enum
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ClientController extends Controller
 {
     /**
+     * Verificar si el usuario tiene acceso al cliente
+     */
+    private function canAccessClient(Client $client): bool
+    {
+        $user = Auth::user();
+
+        // Si es SA, tiene acceso a todo
+        if ($user->role === UserRole::SUPER_ADMIN) {
+            return true;
+        }
+
+        // Si no es SA, solo puede acceder a su propio cliente
+        return $user->client_id === $client->id;
+    }
+
+    /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
+        $user = Auth::user();
+
+        Log::info('User role: ' . $user->role->value);
+
+        // Si no es SA, redirigir a su propio perfil de cliente
+        if ($user->role !== UserRole::SUPER_ADMIN) {
+            return redirect()->route('clients.show', $user->client_id);
+        }
+
         $clients = Client::query()
             ->when($request->search, function ($query, $search) {
                 $query->where('first_name', 'like', "%{$search}%")
@@ -36,7 +64,7 @@ class ClientController extends Controller
             'clients' => ClientResource::collection($clients),
             'filters' => $request->only(['search', 'sort', 'direction']),
             'can' => [
-                'create_client' => true, // Simplificado por ahora
+                'create_client' => $user->role === UserRole::SUPER_ADMIN,
             ]
         ]);
     }
@@ -46,6 +74,13 @@ class ClientController extends Controller
      */
     public function create(): Response
     {
+        $user = Auth::user();
+
+        // Solo SA puede crear clientes
+        if ($user->role !== UserRole::SUPER_ADMIN) {
+            abort(403, 'No tienes permiso para crear clientes.');
+        }
+
         return Inertia::render('Clients/Create');
     }
 
@@ -54,19 +89,26 @@ class ClientController extends Controller
      */
     public function store(StoreClientRequest $request)
     {
+        $user = Auth::user();
+
+        // Solo SA puede crear clientes
+        if ($user->role !== UserRole::SUPER_ADMIN) {
+            abort(403, 'No tienes permiso para crear clientes.');
+        }
+
         // Crear el cliente
         $client = Client::create($request->validated());
 
         // Generar una contraseña aleatoria
-        $password = 'password';
+        $password = $this->generateRandomPassword();
 
         // Crear el usuario asociado al cliente con rol CA (Client Admin)
-        $user = User::create([
+        $newUser = User::create([
             'name' => $client->full_name,
             'email' => $client->email,
             'password' => bcrypt($password),
             'client_id' => $client->id,
-            'role' => 'CA', // Client Admin por defecto para nuevos clientes
+            'role' => UserRole::CLIENT_ADMIN, // Usar el enum
             'is_active' => true,
         ]);
 
@@ -74,9 +116,9 @@ class ClientController extends Controller
             ->with('success', [
                 'message' => 'Cliente y usuario creados exitosamente.',
                 'user_created' => true,
-                'user_email' => $user->email,
+                'user_email' => $newUser->email,
                 'user_password' => $password, // Contraseña temporal para mostrar
-                'user_name' => $user->name,
+                'user_name' => $newUser->name,
                 'user_role' => 'CA',
                 'user_role_label' => 'Administrador de Cliente',
             ]);
@@ -110,6 +152,13 @@ class ClientController extends Controller
      */
     public function show(Client $client): Response
     {
+        $user = Auth::user();
+
+        // Verificar permisos de acceso
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para ver este cliente.');
+        }
+
         // Cargar las relaciones users y devices con sus relaciones anidadas
         $client->load([
             'users',
@@ -118,6 +167,9 @@ class ClientController extends Controller
                     ->orderBy('created_at', 'desc');
             }
         ]);
+
+        $isSuperAdmin = $user->role === UserRole::SUPER_ADMIN;
+        $isClientAdmin = $user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id;
 
         return Inertia::render('Clients/Show', [
             'client' => [
@@ -136,20 +188,15 @@ class ClientController extends Controller
                 'job_title' => $client->job_title,
                 'created_at' => $client->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $client->updated_at->format('Y-m-d H:i:s'),
-                'users' => $client->users->map(function ($user) {
+                'users' => $client->users->map(function ($u) {
                     return [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                        'role_label' => match ($user->role) {
-                            'SA' => 'Super Administrador',
-                            'CA' => 'Administrador de Cliente',
-                            'CU' => 'Usuario de Cliente',
-                            default => 'Usuario de Cliente'
-                        },
-                        'is_active' => $user->is_active,
-                        'created_at' => $user->created_at->format('Y-m-d H:i:s'),
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'role' => $u->role->value, // Obtener el valor del enum
+                        'role_label' => $u->role->label(), // Usar el método label del enum
+                        'is_active' => $u->is_active,
+                        'created_at' => $u->created_at->format('Y-m-d H:i:s'),
                     ];
                 }),
                 'devices' => $client->devices->map(function ($device) {
@@ -189,8 +236,8 @@ class ClientController extends Controller
                 }),
                 'can' => [
                     'view' => true,
-                    'update' => true,
-                    'delete' => true,
+                    'update' => $isSuperAdmin || $isClientAdmin,
+                    'delete' => $isSuperAdmin,
                 ]
             ],
         ]);
@@ -201,6 +248,21 @@ class ClientController extends Controller
      */
     public function edit(Client $client): Response
     {
+        $user = Auth::user();
+
+        // Verificar permisos de acceso y edición
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para editar este cliente.');
+        }
+
+        // Solo SA o CA del mismo cliente pueden editar
+        $canEdit = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canEdit) {
+            abort(403, 'No tienes permiso para editar este cliente.');
+        }
+
         return Inertia::render('Clients/Edit', [
             'client' => [
                 'id' => $client->id,
@@ -221,7 +283,7 @@ class ClientController extends Controller
                 'can' => [
                     'view' => true,
                     'update' => true,
-                    'delete' => true,
+                    'delete' => $user->role === UserRole::SUPER_ADMIN,
                 ]
             ],
         ]);
@@ -232,9 +294,23 @@ class ClientController extends Controller
      */
     public function update(UpdateClientRequest $request, Client $client)
     {
+        $user = Auth::user();
+
+        // Verificar permisos
+        if (!$this->canAccessClient($client)) {
+            abort(403, 'No tienes permiso para actualizar este cliente.');
+        }
+
+        $canEdit = $user->role === UserRole::SUPER_ADMIN ||
+            ($user->role === UserRole::CLIENT_ADMIN && $user->client_id === $client->id);
+
+        if (!$canEdit) {
+            abort(403, 'No tienes permiso para actualizar este cliente.');
+        }
+
         $client->update($request->validated());
 
-        return redirect()->route('clients.index')
+        return redirect()->route('clients.show', $client->id)
             ->with('message', 'Cliente actualizado exitosamente.');
     }
 
@@ -243,6 +319,13 @@ class ClientController extends Controller
      */
     public function destroy(Client $client)
     {
+        $user = Auth::user();
+
+        // Solo SA puede eliminar clientes
+        if ($user->role !== UserRole::SUPER_ADMIN) {
+            abort(403, 'No tienes permiso para eliminar clientes.');
+        }
+
         $client->delete();
 
         return redirect()->route('clients.index')

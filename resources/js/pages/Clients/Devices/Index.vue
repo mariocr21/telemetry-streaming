@@ -529,7 +529,9 @@ const breadcrumbs: BreadcrumbItem[] = [
               <p class="text-gray-600 dark:text-gray-400 mb-8">
                 {{ searchInput 
                   ? `No encontramos dispositivos que coincidan con "${searchInput}".`
-                  : 'Comienza agregando el primer dispositivo para este cliente.' 
+                  : can.create_device 
+                    ? 'Parece que este cliente no tiene dispositivos registrados. ¡Comienza agregando uno!' 
+                    : 'Contacta al administrador para adquirir dispositivos.' 
                 }}
               </p>
               

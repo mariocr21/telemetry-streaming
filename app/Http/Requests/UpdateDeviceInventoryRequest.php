@@ -23,8 +23,6 @@ class UpdateDeviceInventoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        Log::info('Validating UpdateDeviceInventoryRequest for device ID: ' . ($this->deviceInventory->id ?? 'N/A'));
-
         return [
             // NOTA: serial_number y device_uuid NO se incluyen porque no son editables
             'model' => 'required|string|max:255',

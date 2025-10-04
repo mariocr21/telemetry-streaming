@@ -60,6 +60,8 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    hasPermission?: boolean;
+    allowedForClients?: boolean;
 }
 
 // ===== INTERFACES DE PAGINACIÓN =====
