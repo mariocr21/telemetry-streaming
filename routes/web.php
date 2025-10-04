@@ -30,15 +30,15 @@ Route::prefix('clients/{client}')->middleware(['auth', 'verified'])->name('clien
     Route::post('devices/{device}/deactivate', [ClientDeviceController::class, 'deactivate'])
         ->name('devices.deactivate');
 
-Route::get('/vehicle/{vehicleId}/connection-status', [DashboardController::class, 'getVehicleConnectionStatus'])
-    ->name('vehicle.connection.status');
+    Route::get('/vehicle/{vehicleId}/connection-status', [DashboardController::class, 'getVehicleConnectionStatus'])
+        ->name('vehicle.connection.status');
 
-Route::post('/vehicle/{vehicleId}/refresh-cache', [DashboardController::class, 'refreshVehicleCache'])
-    ->name('vehicle.cache.refresh');
+    Route::post('/vehicle/{vehicleId}/refresh-cache', [DashboardController::class, 'refreshVehicleCache'])
+        ->name('vehicle.cache.refresh');
 
-// Ruta para obtener últimos datos de telemetría (ya existente en RegisterVehiculeController)
-Route::get('/telemetry/latest/{vehicleId}', [RegisterVehiculeController::class, 'getLatestTelemetry'])
-    ->name('telemetry.latest');
+    // Ruta para obtener últimos datos de telemetría (ya existente en RegisterVehiculeController)
+    Route::get('/telemetry/latest/{vehicleId}', [RegisterVehiculeController::class, 'getLatestTelemetry'])
+        ->name('telemetry.latest');
 
     // Rutas anidadas para vehículos dentro de dispositivos
     Route::prefix('devices/{device}')->name('devices.')->group(function () {
@@ -50,7 +50,10 @@ Route::get('/telemetry/latest/{vehicleId}', [RegisterVehiculeController::class, 
 
         // Rutas adicionales para vehículos
         Route::prefix('vehicles/{vehicle}')->name('vehicles.')->group(function () {
-
+            Route::get(
+                '/export-sensor-data',
+                [VehicleController::class, 'exportSensorData']
+            )->name('export-sensor-data');
             // Configuración de sensores
             Route::post('toggle-sensor', [VehicleController::class, 'toggleSensor'])
                 ->name('toggle-sensor');

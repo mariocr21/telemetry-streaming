@@ -132,11 +132,36 @@ class VehicleController extends Controller
             'available_years' => range(date('Y') + 2, 1990),
             // Marcas más comunes (se puede expandir o traer de una tabla)
             'common_makes' => [
-                'Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'Hyundai', 
-                'Kia', 'Volkswagen', 'BMW', 'Mercedes-Benz', 'Audi', 'Mazda',
-                'Subaru', 'Lexus', 'Jeep', 'GMC', 'Dodge', 'Ram', 'Buick',
-                'Cadillac', 'Lincoln', 'Acura', 'Infiniti', 'Volvo', 'Jaguar',
-                'Land Rover', 'Porsche', 'Tesla', 'Mitsubishi', 'Suzuki'
+                'Toyota',
+                'Honda',
+                'Ford',
+                'Chevrolet',
+                'Nissan',
+                'Hyundai',
+                'Kia',
+                'Volkswagen',
+                'BMW',
+                'Mercedes-Benz',
+                'Audi',
+                'Mazda',
+                'Subaru',
+                'Lexus',
+                'Jeep',
+                'GMC',
+                'Dodge',
+                'Ram',
+                'Buick',
+                'Cadillac',
+                'Lincoln',
+                'Acura',
+                'Infiniti',
+                'Volvo',
+                'Jaguar',
+                'Land Rover',
+                'Porsche',
+                'Tesla',
+                'Mitsubishi',
+                'Suzuki'
             ]
         ]);
     }
@@ -238,11 +263,36 @@ class VehicleController extends Controller
             ],
             'available_years' => range(date('Y') + 2, 1990),
             'common_makes' => [
-                'Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'Hyundai', 
-                'Kia', 'Volkswagen', 'BMW', 'Mercedes-Benz', 'Audi', 'Mazda',
-                'Subaru', 'Lexus', 'Jeep', 'GMC', 'Dodge', 'Ram', 'Buick',
-                'Cadillac', 'Lincoln', 'Acura', 'Infiniti', 'Volvo', 'Jaguar',
-                'Land Rover', 'Porsche', 'Tesla', 'Mitsubishi', 'Suzuki'
+                'Toyota',
+                'Honda',
+                'Ford',
+                'Chevrolet',
+                'Nissan',
+                'Hyundai',
+                'Kia',
+                'Volkswagen',
+                'BMW',
+                'Mercedes-Benz',
+                'Audi',
+                'Mazda',
+                'Subaru',
+                'Lexus',
+                'Jeep',
+                'GMC',
+                'Dodge',
+                'Ram',
+                'Buick',
+                'Cadillac',
+                'Lincoln',
+                'Acura',
+                'Infiniti',
+                'Volvo',
+                'Jaguar',
+                'Land Rover',
+                'Porsche',
+                'Tesla',
+                'Mitsubishi',
+                'Suzuki'
             ]
         ]);
     }
@@ -366,7 +416,7 @@ class VehicleController extends Controller
 
         $syncedCount = 0;
         $supportedPidList = array_keys(array_filter($vehicle->supported_pids));
-        
+
         if (empty($supportedPidList)) {
             return back()->withErrors(['message' => 'No hay PIDs válidos para sincronizar.']);
         }
@@ -392,7 +442,7 @@ class VehicleController extends Controller
             }
         }
 
-        $message = $syncedCount > 0 
+        $message = $syncedCount > 0
             ? "Se sincronizaron {$syncedCount} sensores exitosamente."
             : "No se encontraron nuevos sensores para sincronizar.";
 
@@ -475,14 +525,14 @@ class VehicleController extends Controller
         $totalSensors = $sensorsWithRecentData->count();
         $activeSensors = $sensorsWithRecentData->where('is_active', true)->count();
         $sensorsWithRecentActivity = $sensorsWithRecentData->filter(function ($sensor) {
-            return $sensor['last_reading_at'] && 
-                   now()->diffInHours($sensor['last_reading_at']) < 24;
+            return $sensor['last_reading_at'] &&
+                now()->diffInHours($sensor['last_reading_at']) < 24;
         })->count();
 
         // Obtener actividad reciente general (últimos 50 registros de cualquier sensor)
         $recentActivity = Register::whereHas('sensor.vehicle', function ($query) use ($vehicle) {
-                $query->where('id', $vehicle->id);
-            })
+            $query->where('id', $vehicle->id);
+        })
             ->with(['sensor.sensor'])
             ->orderBy('recorded_at', 'desc')
             ->limit(50)
@@ -609,7 +659,7 @@ class VehicleController extends Controller
         }
 
         $vehicleSensorId = $request->get('vehicle_sensor_id');
-        
+
         $vehicleSensor = $vehicle->vehicleSensors()
             ->where('id', $vehicleSensorId)
             ->first();
@@ -638,7 +688,7 @@ class VehicleController extends Controller
         }
 
         $vehicleSensorId = $request->get('vehicle_sensor_id');
-        
+
         $vehicleSensor = $vehicle->vehicleSensors()
             ->where('id', $vehicleSensorId)
             ->first();
@@ -662,6 +712,94 @@ class VehicleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Configuración del sensor actualizada exitosamente'
+        ]);
+    }
+    /**
+     * Export sensor data to CSV
+     */
+    public function exportSensorData(Client $client, ClientDevice $device, Vehicle $vehicle, Request $request)
+    {
+        // Verificar permisos
+        // if (!$this->canAccessClient($client)) {
+        //     abort(403);
+        // }
+
+        if ($vehicle->client_device_id !== $device->id || $device->client_id !== $client->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'vehicle_sensor_ids' => 'required|string',
+            'date_range_type' => 'required|in:day,range',
+            'date' => 'required_if:date_range_type,day|date',
+            'start_date' => 'required_if:date_range_type,range|date',
+            'end_date' => 'required_if:date_range_type,range|date|after_or_equal:start_date',
+        ]);
+
+        $sensorIds = explode(',', $request->vehicle_sensor_ids);
+
+        // Query base
+        $query = Register::whereIn('vehicle_sensor_id', $sensorIds)
+            ->with(['sensor.sensor']);
+
+        // Filtrar por fecha
+        if ($request->date_range_type === 'day') {
+            $query->whereDate('recorded_at', $request->date);
+        } else {
+            $query->whereBetween('recorded_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        $registers = $query->orderBy('recorded_at', 'asc')->get();
+
+        // Generar CSV
+        $csvData = [];
+
+        // Encabezados
+        $csvData[] = [
+            'Fecha y Hora',
+            'Sensor',
+            'PID',
+            'Categoría',
+            'Valor',
+            'Unidad',
+            'Vehículo'
+        ];
+
+        // Datos
+        foreach ($registers as $register) {
+            $csvData[] = [
+                $register->recorded_at->format('Y-m-d H:i:s'),
+                $register->sensor->sensor->name ?? 'N/A',
+                $register->sensor->sensor->pid ?? 'N/A',
+                $register->sensor->sensor->category ?? 'N/A',
+                $register->value,
+                $register->sensor->sensor->unit ?? '',
+                $vehicle->display_name
+            ];
+        }
+
+        // Crear el CSV
+        $filename = 'sensores_' . $vehicle->id . '_' . date('Ymd_His') . '.csv';
+
+        $callback = function () use ($csvData) {
+            $file = fopen('php://output', 'w');
+
+            // BOM para UTF-8
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            foreach ($csvData as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 }
