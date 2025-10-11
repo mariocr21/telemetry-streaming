@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('registers', function (Blueprint $table) {
-            //
+            // revertir el tipo de dato en la columna 'value' a decimal(10, 2)
             $table->decimal('value', 10, 2)->change();
         });
     }

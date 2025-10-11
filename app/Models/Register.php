@@ -19,7 +19,7 @@ class Register extends Model
 
     protected $casts = [
         'recorded_at' => 'datetime',
-        'value' => 'decimal:2',
+        'value' => 'decimal:15,10',
     ];
 
     protected $dates = [

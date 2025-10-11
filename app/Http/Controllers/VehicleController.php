@@ -775,7 +775,7 @@ class VehicleController extends Controller
                 $register->sensor->sensor->name ?? 'N/A',
                 $register->sensor->sensor->pid ?? 'N/A',
                 $register->sensor->sensor->category ?? 'N/A',
-                $register->value,
+                (float) $register->value,
                 $register->sensor->sensor->unit ?? '',
                 $vehicle->display_name
             ];
