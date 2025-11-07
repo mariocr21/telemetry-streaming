@@ -19,13 +19,15 @@ class VehicleTelemetryEvent implements ShouldBroadcast
     public $deviceId;
     public $telemetryData;
     public $timestamp;
+    public $dtcCodes; // Nuevo campo para códigos DTC
 
-    public function __construct($vehicleId, $deviceId, $telemetryData)
+    public function __construct($vehicleId, $deviceId, $telemetryData, $dtcCodes = [])
     {
         $this->vehicleId = $vehicleId;
         $this->deviceId = $deviceId;
         $this->telemetryData = $telemetryData;
         $this->timestamp = now()->toISOString();
+        $this->dtcCodes = $dtcCodes; // Inicializar campo DTC
     }
 
     /**
@@ -36,13 +38,15 @@ class VehicleTelemetryEvent implements ShouldBroadcast
         Log::info('Broadcasting telemetry data', [
             'vehicle_id' => $this->vehicleId,
             'device_id' => $this->deviceId,
-            'sensors_count' => count($this->telemetryData)
+            'sensors_count' => count($this->telemetryData),
+            'dtc_codes_count' => count($this->dtcCodes),
         ]);
 
         return [
             new Channel('telemetry'),
             new PrivateChannel('vehicle.' . $this->vehicleId),
             new PrivateChannel('device.' . $this->deviceId),
+            new Channel('dtc'), // Canal para alertas de códigos de error
         ];
     }
 
@@ -63,7 +67,9 @@ class VehicleTelemetryEvent implements ShouldBroadcast
             'vehicle_id' => $this->vehicleId,
             'device_id' => $this->deviceId,
             'timestamp' => $this->timestamp,
-            'data' => $this->telemetryData
+            'data' => $this->telemetryData,
+            'dtc_codes' => $this->dtcCodes,
+            'has_dtc' => count($this->dtcCodes) > 0,
         ];
     }
 
@@ -72,6 +78,6 @@ class VehicleTelemetryEvent implements ShouldBroadcast
      */
     public function broadcastWhen(): bool
     {
-        return !empty($this->telemetryData);
+        return !empty($this->telemetryData) || !empty($this->dtcCodes);
     }
 }

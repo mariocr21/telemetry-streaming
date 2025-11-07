@@ -1,5 +1,5 @@
 <?php
-// Modificar tu RegisterVehiculeController.php
+// RegisterVehiculeController.php modificado
 
 namespace App\Http\Controllers;
 
@@ -7,6 +7,7 @@ use App\Events\VehicleTelemetryEvent;
 use App\Models\ClientDevice;
 use App\Models\Register;
 use App\Models\VehicleSensor;
+use App\Models\DiagnosticTroubleCode; // Asumimos que crearemos este modelo para los DTC
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,7 +21,9 @@ class RegisterVehiculeController extends Controller
             $data = $request->validate([
                 'id' => 'required|exists:device_inventories,serial_number',
                 'idc' => 'required|exists:vehicles,vin',
+                'dt' => 'required|string', // Nuevo campo de timestamp global
                 's' => 'required|array',
+                'DTC' => 'nullable|array', // Campo opcional para códigos de error
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -46,12 +49,15 @@ class RegisterVehiculeController extends Controller
 
             $telemetryData = [];
             $processedReadings = [];
+            $timestamp = $data['dt']; // Usar el timestamp global
 
-            //revisar los datos recibidos en log
+            // Registrar los datos recibidos en el log
             Log::debug('Received telemetry data', [
                 'device_id' => $data['id'],
                 'vehicle_vin' => $data['idc'],
+                'timestamp' => $timestamp,
                 'sensors' => $data['s'],
+                'dtc_codes' => $data['DTC'] ?? [],
             ]);
 
             foreach ($data['s'] as $sensorHex => $sensorData) {
@@ -65,13 +71,13 @@ class RegisterVehiculeController extends Controller
                     ->first();
 
                 if ($vehicleSensor) {
-                    // Guardar en base de datos
+                    // Guardar en base de datos - ahora usando timestamp global
                     Register::create([
                         'client_device_id' => $clientDevice->id,
                         'vehicle_id' => $clientVehicle->id,
                         'vehicle_sensor_id' => $vehicleSensor->id,
                         'value' => $sensorData['v'],
-                        'recorded_at' => $sensorData['dt'],
+                        'recorded_at' => $timestamp, // Usar timestamp global
                     ]);
 
                     // Preparar datos para broadcast
@@ -86,18 +92,55 @@ class RegisterVehiculeController extends Controller
                         'processed_value' => $processedValue,
                         'unit' => $vehicleSensor->sensor->unit,
                         'name' => $vehicleSensor->sensor->name,
-                        'timestamp' => $sensorData['dt']
+                        'timestamp' => $timestamp // Usar timestamp global
                     ];
 
                     $processedReadings[$sensorHex] = $processedValue;
                 }
             }
 
-            // Broadcast evento de telemetría en tiempo real
+            // Procesamiento de códigos DTC si existen
+            $dtcCodes = [];
+            if (!empty($data['DTC'])) {
+                foreach ($data['DTC'] as $code) {
+                    // Guardar los DTC en la base de datos (asumiendo que tenemos un modelo para esto)
+                    $dtc = DiagnosticTroubleCode::firstOrCreate([
+                        'vehicle_id' => $clientVehicle->id,
+                        'code' => $code,
+                    ], [
+                        'detected_at' => $timestamp,
+                        'is_active' => true,
+                    ]);
+                    
+                    // Si el DTC ya existía pero estaba marcado como inactivo, actualizarlo
+                    if (!$dtc->wasRecentlyCreated && !$dtc->is_active) {
+                        $dtc->update([
+                            'is_active' => true,
+                            'redetected_at' => $timestamp,
+                        ]);
+                    }
+                    
+                    $dtcCodes[] = [
+                        'code' => $code,
+                        'description' => $this->getDTCDescription($code), // Método para obtener descripción
+                        'severity' => $this->getDTCSeverity($code), // Método para obtener severidad
+                    ];
+                }
+                
+                // Guardar los DTC actuales en caché para acceso rápido
+                Cache::put(
+                    "vehicle_dtc_{$clientVehicle->id}",
+                    $dtcCodes,
+                    300 // 5 minutos
+                );
+            }
+
+            // Broadcast evento de telemetría en tiempo real, incluyendo DTC
             broadcast(new VehicleTelemetryEvent(
                 $clientVehicle->id,
                 $clientDevice->id,
-                $telemetryData
+                $telemetryData,
+                $dtcCodes
             ));
 
             // Cache para API rápida
@@ -126,6 +169,10 @@ class RegisterVehiculeController extends Controller
 
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
+            Log::error('Error processing telemetry: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -157,15 +204,87 @@ class RegisterVehiculeController extends Controller
         }
     }
 
+    // Método para obtener descripción de código DTC
+    private function getDTCDescription($code)
+    {
+        // Implementar lógica para obtener descripción del código DTC
+        // Puede ser desde una base de datos o un servicio externo
+        // Por ahora retornamos una descripción genérica
+        $prefixes = [
+            'P0' => 'Powertrain Issue',
+            'P1' => 'Manufacturer-Specific Powertrain Issue',
+            'P2' => 'Powertrain Issue (Fuel/Air Monitoring)',
+            'P3' => 'Powertrain Issue (Ignition)',
+            'B0' => 'Body Issue',
+            'C0' => 'Chassis Issue',
+            'U0' => 'Network Issue',
+        ];
+        
+        $prefix = substr($code, 0, 2);
+        
+        return $prefixes[$prefix] ?? 'Unknown Issue';
+    }
+    
+    // Método para determinar la severidad del código DTC
+    private function getDTCSeverity($code)
+    {
+        // Implementar lógica para determinar la severidad
+        // Por ahora simplemente basado en el tipo de código
+        $prefix = substr($code, 0, 1);
+        
+        switch ($prefix) {
+            case 'P':
+                return 'high'; // Problemas del motor suelen ser más críticos
+            case 'B':
+                return 'medium';
+            case 'C':
+                return 'medium';
+            case 'U':
+                return 'low';
+            default:
+                return 'unknown';
+        }
+    }
+
     // Endpoint para obtener últimos datos en caché
     public function getLatestTelemetry($vehicleId)
     {
         $telemetry = Cache::get("vehicle_telemetry_{$vehicleId}", []);
+        $dtcCodes = Cache::get("vehicle_dtc_{$vehicleId}", []);
 
         return response()->json([
             'vehicle_id' => $vehicleId,
             'timestamp' => now()->toISOString(),
-            'data' => $telemetry
+            'data' => $telemetry,
+            'dtc_codes' => $dtcCodes
+        ]);
+    }
+    
+    // Endpoint para obtener los códigos DTC activos
+    public function getActiveDTC($vehicleId)
+    {
+        $dtcCodes = Cache::get("vehicle_dtc_{$vehicleId}", []);
+        
+        if (empty($dtcCodes)) {
+            // Si no hay en caché, intentar obtener de la base de datos
+            $dtcCodes = DiagnosticTroubleCode::where('vehicle_id', $vehicleId)
+                ->where('is_active', true)
+                ->get()
+                ->map(function($dtc) {
+                    return [
+                        'code' => $dtc->code,
+                        'description' => $this->getDTCDescription($dtc->code),
+                        'severity' => $this->getDTCSeverity($dtc->code),
+                        'detected_at' => $dtc->detected_at,
+                    ];
+                })
+                ->toArray();
+        }
+        
+        return response()->json([
+            'vehicle_id' => $vehicleId,
+            'timestamp' => now()->toISOString(),
+            'dtc_codes' => $dtcCodes
         ]);
     }
 }

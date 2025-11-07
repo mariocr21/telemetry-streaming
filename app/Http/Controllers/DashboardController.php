@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientDevice;
+use App\Models\DiagnosticTroubleCode;
 use App\Models\Register;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -56,17 +57,22 @@ class DashboardController extends Controller
         // Determinar el estado de conexión basado en la última lectura
         $connectionStatus = $this->determineConnectionStatus($vehicle->id);
 
+        // Obtener códigos DTC activos
+        $dtcCodes = $this->getActiveDTCs($vehicle->id);
+
         Log::info('Vehicle data retrieved with latest readings', [
             'vehicle_id' => $vehicle->id,
             'sensors_count' => $vehicle->vehicleSensors->count(),
             'latest_readings_count' => count($latestReadings['data']),
-            'connection_status' => $connectionStatus
+            'connection_status' => $connectionStatus,
+            'dtc_codes_count' => count($dtcCodes)
         ]);
 
         return response()->json([
             'vehicle' => $vehicle,
             'latest_readings' => $latestReadings,
-            'connection_status' => $connectionStatus
+            'connection_status' => $connectionStatus,
+            'dtc_codes' => $dtcCodes
         ]);
     }
 
@@ -142,6 +148,87 @@ class DashboardController extends Controller
             'source' => 'database',
             'timestamp' => $latestTimestamp?->toISOString() ?? now()->toISOString()
         ];
+    }
+
+    /**
+     * Obtener códigos DTC activos para un vehículo
+     */
+    private function getActiveDTCs($vehicleId)
+    {
+        // Primero intentar obtener desde caché
+        $cachedDtcCodes = Cache::get("vehicle_dtc_{$vehicleId}");
+        
+        if ($cachedDtcCodes) {
+            Log::info('Using cached DTC data', ['vehicle_id' => $vehicleId]);
+            return $cachedDtcCodes;
+        }
+        
+        // Si no hay en caché, obtener de la base de datos
+        $dtcCodes = DiagnosticTroubleCode::where('vehicle_id', $vehicleId)
+            ->where('is_active', true)
+            ->get()
+            ->map(function($dtc) {
+                return [
+                    'id' => $dtc->id,
+                    'code' => $dtc->code,
+                    'description' => $dtc->description ?? $this->getDTCDescription($dtc->code),
+                    'severity' => $dtc->severity ?? $this->getDTCSeverity($dtc->code),
+                    'detected_at' => $dtc->detected_at,
+                ];
+            })
+            ->toArray();
+            
+        // Guardar en caché para futuras peticiones
+        if (!empty($dtcCodes)) {
+            Cache::put(
+                "vehicle_dtc_{$vehicleId}",
+                $dtcCodes,
+                300 // 5 minutos
+            );
+        }
+        
+        return $dtcCodes;
+    }
+
+    /**
+     * Método para obtener descripción de código DTC
+     */
+    private function getDTCDescription($code)
+    {
+        $prefixes = [
+            'P0' => 'Powertrain Issue',
+            'P1' => 'Manufacturer-Specific Powertrain Issue',
+            'P2' => 'Powertrain Issue (Fuel/Air Monitoring)',
+            'P3' => 'Powertrain Issue (Ignition)',
+            'B0' => 'Body Issue',
+            'C0' => 'Chassis Issue',
+            'U0' => 'Network Issue',
+        ];
+        
+        $prefix = substr($code, 0, 2);
+        
+        return $prefixes[$prefix] ?? 'Unknown Issue';
+    }
+    
+    /**
+     * Método para determinar la severidad del código DTC
+     */
+    private function getDTCSeverity($code)
+    {
+        $prefix = substr($code, 0, 1);
+        
+        switch ($prefix) {
+            case 'P':
+                return 'high'; // Problemas del motor suelen ser más críticos
+            case 'B':
+                return 'medium';
+            case 'C':
+                return 'medium';
+            case 'U':
+                return 'low';
+            default:
+                return 'unknown';
+        }
     }
 
     /**
@@ -267,6 +354,21 @@ class DashboardController extends Controller
     }
 
     /**
+     * Endpoint para obtener los códigos DTC activos
+     */
+    public function getVehicleDTCs($vehicleId)
+    {
+        $dtcCodes = $this->getActiveDTCs($vehicleId);
+        
+        return response()->json([
+            'vehicle_id' => $vehicleId,
+            'timestamp' => now()->toISOString(),
+            'dtc_codes' => $dtcCodes,
+            'active_count' => count($dtcCodes)
+        ]);
+    }
+
+    /**
      * Endpoint para forzar actualización de caché
      */
     public function refreshVehicleCache($vehicleId)
@@ -274,13 +376,16 @@ class DashboardController extends Controller
         // Limpiar caché existente
         Cache::forget("vehicle_telemetry_{$vehicleId}");
         Cache::forget("vehicle_telemetry_timestamp_{$vehicleId}");
+        Cache::forget("vehicle_dtc_{$vehicleId}");
         
         // Obtener nuevas lecturas
         $latestReadings = $this->getLatestSensorReadings($vehicleId);
+        $dtcCodes = $this->getActiveDTCs($vehicleId);
         
         return response()->json([
             'message' => 'Cache refreshed successfully',
-            'latest_readings' => $latestReadings
+            'latest_readings' => $latestReadings,
+            'dtc_codes' => $dtcCodes
         ]);
     }
 }

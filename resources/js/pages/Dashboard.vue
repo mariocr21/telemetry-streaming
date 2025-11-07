@@ -7,6 +7,7 @@ import PrimarySensorsWidget from '@/components/Dashboard/PrimarySensorsWidget.vu
 import QuickActionsWidget from '@/components/Dashboard/QuickActionsWidget.vue';
 import SecondarySensorsWidget from '@/components/Dashboard/SecondarySensorsWidget.vue';
 import ThrottleWidget from '@/components/Dashboard/ThrottleWidget.vue';
+import Dtcwidget from '@/components/Dtcwidget.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -78,6 +79,16 @@ interface ConnectionStatus {
     formatted_inactivity?: string;
 }
 
+interface DiagnosticTroubleCode {
+    id: number;
+    code: string;
+    description: string;
+    severity: 'high' | 'medium' | 'low' | 'unknown';
+    detected_at: string;
+    redetected_at?: string;
+    resolved_at?: string;
+    is_active: boolean;
+}
 // Props
 const props = defineProps<{
     devices: Device[];
@@ -99,6 +110,8 @@ const maxRetries = 5;
 const realTimeTimeout = ref<NodeJS.Timeout | null>(null);
 const sensorReadings = ref<Record<string, number>>({});
 const lastDataSource = ref<'cache' | 'database' | 'realtime' | 'simulation'>('database');
+const dtcCodes = ref<DiagnosticTroubleCode[]>([]);
+const hasDtcCodes = computed(() => dtcCodes.value.length > 0);
 
 // WebSocket channel management
 const currentVehicleId = ref<number | null>(null);
@@ -395,6 +408,11 @@ const setupWebSocketConnection = () => {
                 if (data.vehicle_id === selectedVehicle.value?.id) {
                     console.log('✅ Datos coinciden con vehículo actual, procesando...');
                     handleTelemetryUpdate(data);
+
+                    if (data.dtc_codes && Array.isArray(data.dtc_codes)) {
+                        dtcCodes.value = data.dtc_codes;
+                        console.log('📢 DTC Codes actualizados:', data.dtc_codes.length);
+                    }
                 } else {
                     console.log('⚠️ Datos filtrados - no coinciden:', {
                         received: data.vehicle_id,
@@ -551,6 +569,9 @@ const fetchVehicleData = async (deviceId: number) => {
             selectedVehicle.value = response.data.vehicle;
             connectionStatus.value = response.data.connection_status;
 
+            if (response.data.dtc_codes) {
+                dtcCodes.value = response.data.dtc_codes;
+            }
             console.log('🎯 Nuevo vehículo seleccionado:', {
                 id: selectedVehicle.value.id,
                 make: selectedVehicle.value.make,
@@ -680,6 +701,11 @@ const fetchLatestTelemetry = async () => {
             });
             lastUpdate.value = new Date();
             console.log('📥 Datos de telemetría actualizados desde cache');
+
+            if (response.data.dtc_codes) {
+                dtcCodes.value = response.data.dtc_codes;
+                console.log('📥 Códigos DTC actualizados:', dtcCodes.value.length);
+            }
         }
     } catch (error) {
         console.error('Error fetching latest telemetry:', error);
@@ -813,6 +839,7 @@ const updateMapGpsData = () => {
                             @reconnect="setupWebSocketConnection"
                         />
 
+                        <Dtcwidget v-if="selectedVehicle" :dtc-codes="dtcCodes" :is-real-time-active="isRealTimeActive" />
                         <!-- Quick Actions Widget -->
                         <QuickActionsWidget
                             :selected-vehicle="selectedVehicle"
