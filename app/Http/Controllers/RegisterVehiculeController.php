@@ -70,7 +70,7 @@ class RegisterVehiculeController extends Controller
                     ->with('sensor')
                     ->first();
 
-                if ($vehicleSensor) {
+                if ($vehicleSensor && isset($sensorData['v'])) {
                     // Guardar en base de datos - ahora usando timestamp global
                     Register::create([
                         'client_device_id' => $clientDevice->id,
