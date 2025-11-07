@@ -343,7 +343,7 @@ class SensorSeeder extends Seeder
                 'calculation_formula' => 'A * 100 / 255'
             ],
             [
-                'pid' => '0x42',
+                'pid' => 'BAT',
                 'name' => 'Battery Voltage',
                 'description' => 'Voltaje de la batería del vehículo',
                 'category' => 'electrical',
