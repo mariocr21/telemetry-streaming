@@ -126,7 +126,7 @@ interface ConnectionStatus {
 
 // Props
 const props = defineProps<{
-  selectedVehicle: Vehicle | null
+  selectedVehicle: Vehicle | null | any
   isLoading: boolean
   isRealTimeActive: boolean
   connectionStatus: ConnectionStatus | null

@@ -5,6 +5,7 @@ use App\Http\Controllers\ClientDeviceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceInventoryController;
 use App\Http\Controllers\RegisterVehiculeController;
+use App\Http\Controllers\ReplayController;
 use App\Http\Controllers\TelemetryController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -102,6 +103,11 @@ Route::prefix('telemetry')->group(function () {
     Route::get('/stats/{vehicleId}', [TelemetryController::class, 'getStats'])
         ->name('telemetry.stats');
 });
+
+Route::prefix('replays')->middleware(['auth', 'verified'])->group(function () {
+    Route::get('/', [ReplayController::class, 'index'])->name('replays.index');
+});
+
 // Test endpoints (solo en desarrollo)
 if (app()->environment('local')) {
     Route::prefix('test')->group(function () {
@@ -114,5 +120,15 @@ if (app()->environment('local')) {
             ->name('test.websocket');
     });
 }
+Route::middleware(['auth', 'verified'])
+    ->prefix('api/vehicles')
+    ->group(function () {
+        Route::get('/sessions/{vehicleId}', [ReplayController::class, 'getAvailableSessions'])
+            ->name('vehicles.sessions');
+        Route::get('/session-data/{vehicleId}', [ReplayController::class, 'getSessionData'])
+            ->name('vehicles.session-data');
+        Route::get('/{vehicle}/replay', [ReplayController::class, 'getReplayData'])
+            ->name('vehicles.replay');
+    });
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
