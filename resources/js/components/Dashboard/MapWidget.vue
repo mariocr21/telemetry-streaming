@@ -364,7 +364,7 @@ const fitToTrail = () => {
 
 const formatCoordinate = (coord: number | null | undefined): string => {
   if (coord === null || coord === undefined) return '---'
-  return coord.toFixed(6)
+  return Number(coord).toFixed(6).toString()
 }
 
 const formatHeading = (heading: number | null): string => {
@@ -372,7 +372,7 @@ const formatHeading = (heading: number | null): string => {
   
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
   const index = Math.round(heading / 45) % 8
-  return `${heading.toFixed(1)}° ${directions[index]}`
+  return `${Number(heading).toFixed(1)}° ${directions[index]}`
 }
 
 // Función para redimensionar el mapa manualmente
