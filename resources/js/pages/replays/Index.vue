@@ -146,7 +146,7 @@ const displayedPids = ['0x0D', 'vel_kmh', '0x0C', '0x05', '0x2F', '0x0B', '0x42'
 const getSensorValue = (pid: string): number => {
     const val = sensorReadings.value[pid];
     if (val === undefined || val === null) return 0;
-    return Number(2);
+    return Number(val);
 };
 
 // Sensores principales (velocidad, RPM)
@@ -219,13 +219,13 @@ const secondarySensors = computed(() => {
     }
 
     // Batería
-    if (sensorMap.value['0x42']) {
+    if (sensorMap.value['BAT']) {
         sensors.push({
             id: 'battery',
             title: 'Batería',
             emoji: '🔋',
-            sensor: sensorMap.value['0x42'],
-            value: getSensorValue('0x42'),
+            sensor: sensorMap.value['BAT'],
+            value: getSensorValue('BAT'),
             defaultValue: 12.4,
         });
     }

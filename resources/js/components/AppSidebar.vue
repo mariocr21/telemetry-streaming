@@ -54,6 +54,13 @@ const allNavItems = computed(() => [
         hasPermission: true,
         allowedForClients: false,
     },
+    {
+        title: 'Replays',
+        href: '/replays',
+        icon: Users,
+        hasPermission: true,
+        allowedForClients: false,
+    },
     ...(isClient.value
         ? [
               {
