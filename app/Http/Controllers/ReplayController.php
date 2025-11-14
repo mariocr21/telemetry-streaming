@@ -46,12 +46,12 @@ public function index(Request $request)
         $dates = DB::table('registers as r')
             ->join('vehicle_sensors as vs', 'r.vehicle_sensor_id', '=', 'vs.id')
             ->select([
-                DB::raw('DATE(r.recorded_at) as date'),
+                DB::raw('DATE(r.created_at) as date'),
                 DB::raw('COUNT(DISTINCT vs.vehicle_id) as vehicle_count'),
                 DB::raw('COUNT(*) as record_count')
             ])
-            ->where('r.recorded_at', '>=', now()->subDays(30))
-            ->groupBy(DB::raw('DATE(r.recorded_at)'))
+            ->where('r.created_at', '>=', now()->subDays(30))
+            ->groupBy(DB::raw('DATE(r.created_at)'))
             ->orderBy('date', 'desc')
             ->get();
 
@@ -106,14 +106,14 @@ public function index(Request $request)
             $hours = DB::table('registers as r')
                 ->join('vehicle_sensors as vs', 'r.vehicle_sensor_id', '=', 'vs.id')
                 ->select([
-                    DB::raw('HOUR(r.recorded_at) as hour'),
-                    DB::raw('MIN(r.recorded_at) as start_time'),
-                    DB::raw('MAX(r.recorded_at) as end_time'),
+                    DB::raw('HOUR(r.created_at) as hour'),
+                    DB::raw('MIN(r.created_at) as start_time'),
+                    DB::raw('MAX(r.created_at) as end_time'),
                     DB::raw('COUNT(*) as record_count')
                 ])
                 ->where('vs.vehicle_id', $vehicleId)
-                ->whereBetween('r.recorded_at', [$dateStart, $dateEnd])
-                ->groupBy(DB::raw('HOUR(r.recorded_at)'))
+                ->whereBetween('r.created_at', [$dateStart, $dateEnd])
+                ->groupBy(DB::raw('HOUR(r.created_at)'))
                 ->having('record_count', '>', 10) // Solo horas con suficientes datos
                 ->orderBy('hour', 'asc')
                 ->get();
@@ -206,9 +206,9 @@ public function index(Request $request)
             // 1) Obtener todos los registros del vehículo en el rango, con sus sensores
             $registers = Register::query()
                 ->forVehicle($vehicleId)
-                ->whereBetween('recorded_at', [$from, $to])
+                ->whereBetween('created_at', [$from, $to])
                 ->with(['sensor', 'originalSensor']) // sensor = VehicleSensor, originalSensor = Sensor
-                ->orderBy('recorded_at')
+                ->orderBy('created_at')
                 ->get();
 
             if ($registers->isEmpty()) {
@@ -238,9 +238,9 @@ public function index(Request $request)
                     continue;
                 }
 
-                $timestamp = $reg->recorded_at instanceof Carbon
-                    ? $reg->recorded_at->toIso8601String()
-                    : Carbon::parse($reg->recorded_at)->toIso8601String();
+                $timestamp = $reg->created_at instanceof Carbon
+                    ? $reg->created_at->toIso8601String()
+                    : Carbon::parse($reg->created_at)->toIso8601String();
 
                 if (!isset($frames[$timestamp])) {
                     $frames[$timestamp] = [
