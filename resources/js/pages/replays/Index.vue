@@ -462,7 +462,7 @@ const loadReplay = async () => {
 
     <AppLayout>
         <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 text-white">
-            <div class="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:px-8">
+            <div class="mx-auto space-y-4 px-4 py-6 lg:px-8">
                 <!-- Filtros de vehículo + rango -->
                 <div class="space-y-4 rounded-xl border border-slate-700/60 bg-slate-900/60 p-4">
                     <div class="flex items-center justify-between">
