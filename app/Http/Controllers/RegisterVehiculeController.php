@@ -18,6 +18,7 @@ class RegisterVehiculeController extends Controller
     public function store(Request $request)
     {
         try {
+            Log::info('Incoming telemetry data', ['payload' => $request->all()]);
             $data = $request->validate([
                 'id' => 'required|exists:device_inventories,serial_number',
                 'idc' => 'required|exists:vehicles,vin',
