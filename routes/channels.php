@@ -15,10 +15,13 @@ Broadcast::channel('telemetry', function ($user) {
 
 // Canal privado para vehículo específico
 Broadcast::channel('vehicle.{vehicleId}', function ($user, $vehicleId) {
-    // Verificar si el usuario tiene acceso a este vehículo
-    if (!$user) {
+    // Verificar que $vehicleId no sea null o undefined
+    if (!$user || $vehicleId === 'undefined' || $vehicleId === null) {
         return false;
     }
+    
+    // Convertir $vehicleId a número entero
+    $vehicleId = intval($vehicleId);
     
     $vehicle = Vehicle::find($vehicleId);
     
@@ -26,8 +29,7 @@ Broadcast::channel('vehicle.{vehicleId}', function ($user, $vehicleId) {
         return false;
     }
     
-    // Verificar si el vehículo pertenece al cliente del usuario
-    // Ajusta esta lógica según tu estructura de permisos
+    // Verificar permisos de acceso
     return $vehicle->client_id === $user->client_id || $user->isSuperAdmin();
 });
 

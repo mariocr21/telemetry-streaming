@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-interface DTCCode {
+interface DiagnosticTroubleCode {
     id: number;
     code: string;
     description: string;
     severity: 'high' | 'medium' | 'low' | 'unknown';
     detected_at: string;
+    is_active: boolean;
 }
-
 const props = defineProps<{
-    dtcCodes: DTCCode[];
+    dtcCodes: DiagnosticTroubleCode[];
     isRealTimeActive: boolean;
 }>();
 

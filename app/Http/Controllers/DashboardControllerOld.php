@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\DeviceClientCollection;
-use App\Http\Resources\DeviceClientResource;
 use App\Models\ClientDevice;
 use App\Models\DiagnosticTroubleCode;
 use App\Models\Register;
@@ -36,17 +34,14 @@ class DashboardController extends Controller
             'device_count' => $devices->count(),
         ]);
         return Inertia::render('Dashboard', [
-            'devices' => new DeviceClientCollection($devices),
+            'devices' => $devices,
         ]);
     }
 
-    /**
-     * Endpoint que obtiene la data completa del vehículo activo, incluyendo sensores clasificados.
-     */
     public function getDeviceVehicleActive(Request $request, ClientDevice $clientDevice)
     {
         $vehicle = $clientDevice->vehicles()->where('status', true)->first();
-
+        
         if (!$vehicle) {
             return response()->json([
                 'message' => 'No active vehicle found for this device.',
@@ -56,29 +51,26 @@ class DashboardController extends Controller
         // Cargar el vehículo con sus sensores
         $vehicle->load('vehicleSensors.sensor');
 
-        // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
+        // Obtener las últimas lecturas de cada sensor
         $latestReadings = $this->getLatestSensorReadings($vehicle->id);
-
+        
         // Determinar el estado de conexión basado en la última lectura
         $connectionStatus = $this->determineConnectionStatus($vehicle->id);
 
         // Obtener códigos DTC activos
         $dtcCodes = $this->getActiveDTCs($vehicle->id);
 
-        // CLASIFICAR Y ESTRUCTURAR LOS SENSORES
-        $structuredSensors = $this->structureAndClassifySensors(
-            $vehicle->vehicleSensors,
-            $latestReadings['data']
-        );
-
         Log::info('Vehicle data retrieved with latest readings', [
             'vehicle_id' => $vehicle->id,
+            'sensors_count' => $vehicle->vehicleSensors->count(),
+            'latest_readings_count' => count($latestReadings['data']),
+            'connection_status' => $connectionStatus,
+            'dtc_codes_count' => count($dtcCodes)
         ]);
 
         return response()->json([
             'vehicle' => $vehicle,
             'latest_readings' => $latestReadings,
-            'structured_sensors' => $structuredSensors, // CLAVE: Datos pre-estructurados
             'connection_status' => $connectionStatus,
             'dtc_codes' => $dtcCodes
         ]);
@@ -90,10 +82,10 @@ class DashboardController extends Controller
     private function getLatestSensorReadings($vehicleId)
     {
         Log::info('Fetching latest sensor readings for vehicle', ['vehicle_id' => $vehicleId]);
-
+        
         // Primero intentar desde caché
         $cachedData = Cache::get("vehicle_telemetry_{$vehicleId}");
-
+        
         if ($cachedData && !empty($cachedData)) {
             Log::info('Using cached telemetry data', ['vehicle_id' => $vehicleId]);
             return [
@@ -104,10 +96,10 @@ class DashboardController extends Controller
         }
 
         Log::info('No cache found, querying database for latest readings', ['vehicle_id' => $vehicleId]);
-
+        
         // Usar tu estructura existente: registers -> vehicle_sensors -> vehicles
         $twentyFourHoursAgo = now()->subHours(24);
-
+        
         $latestReadings = DB::table('registers as r')
             ->join('vehicle_sensors as vs', 'r.vehicle_sensor_id', '=', 'vs.id')
             ->join('sensors as s', 'vs.sensor_id', '=', 's.id')
@@ -137,7 +129,7 @@ class DashboardController extends Controller
             );
 
             $processedReadings[$reading->pid] = $processedValue;
-
+            
             // Mantener track del timestamp más reciente
             $recordedAt = Carbon::parse($reading->recorded_at);
             if (!$latestTimestamp || $recordedAt->gt($latestTimestamp)) {
@@ -165,17 +157,17 @@ class DashboardController extends Controller
     {
         // Primero intentar obtener desde caché
         $cachedDtcCodes = Cache::get("vehicle_dtc_{$vehicleId}");
-
+        
         if ($cachedDtcCodes) {
             Log::info('Using cached DTC data', ['vehicle_id' => $vehicleId]);
             return $cachedDtcCodes;
         }
-
+        
         // Si no hay en caché, obtener de la base de datos
         $dtcCodes = DiagnosticTroubleCode::where('vehicle_id', $vehicleId)
             ->where('is_active', true)
             ->get()
-            ->map(function ($dtc) {
+            ->map(function($dtc) {
                 return [
                     'id' => $dtc->id,
                     'code' => $dtc->code,
@@ -185,7 +177,7 @@ class DashboardController extends Controller
                 ];
             })
             ->toArray();
-
+            
         // Guardar en caché para futuras peticiones
         if (!empty($dtcCodes)) {
             Cache::put(
@@ -194,7 +186,7 @@ class DashboardController extends Controller
                 300 // 5 minutos
             );
         }
-
+        
         return $dtcCodes;
     }
 
@@ -212,19 +204,19 @@ class DashboardController extends Controller
             'C0' => 'Chassis Issue',
             'U0' => 'Network Issue',
         ];
-
+        
         $prefix = substr($code, 0, 2);
-
+        
         return $prefixes[$prefix] ?? 'Unknown Issue';
     }
-
+    
     /**
      * Método para determinar la severidad del código DTC
      */
     private function getDTCSeverity($code)
     {
         $prefix = substr($code, 0, 1);
-
+        
         switch ($prefix) {
             case 'P':
                 return 'high'; // Problemas del motor suelen ser más críticos
@@ -245,9 +237,9 @@ class DashboardController extends Controller
     private function determineConnectionStatus($vehicleId)
     {
         // Usar tu estructura existente: buscar a través de vehicle_sensors
-        $lastRegister = Register::whereHas('sensor', function ($query) use ($vehicleId) {
-            $query->where('vehicle_id', $vehicleId);
-        })
+        $lastRegister = Register::whereHas('sensor', function($query) use ($vehicleId) {
+                $query->where('vehicle_id', $vehicleId);
+            })
             ->orderBy('recorded_at', 'desc')
             ->first();
 
@@ -332,7 +324,7 @@ class DashboardController extends Controller
     private function getHumanReadableTime(Carbon $timestamp)
     {
         $diffInSeconds = $timestamp->diffInSeconds(now());
-
+        
         if ($diffInSeconds < 60) {
             // Menos de 1 minuto - mostrar segundos
             return $diffInSeconds == 1 ? 'Hace 1 segundo' : "Hace {$diffInSeconds} segundos";
@@ -357,7 +349,7 @@ class DashboardController extends Controller
     public function getVehicleConnectionStatus($vehicleId)
     {
         $connectionStatus = $this->determineConnectionStatus($vehicleId);
-
+        
         return response()->json($connectionStatus);
     }
 
@@ -367,7 +359,7 @@ class DashboardController extends Controller
     public function getVehicleDTCs($vehicleId)
     {
         $dtcCodes = $this->getActiveDTCs($vehicleId);
-
+        
         return response()->json([
             'vehicle_id' => $vehicleId,
             'timestamp' => now()->toISOString(),
@@ -385,94 +377,15 @@ class DashboardController extends Controller
         Cache::forget("vehicle_telemetry_{$vehicleId}");
         Cache::forget("vehicle_telemetry_timestamp_{$vehicleId}");
         Cache::forget("vehicle_dtc_{$vehicleId}");
-
+        
         // Obtener nuevas lecturas
         $latestReadings = $this->getLatestSensorReadings($vehicleId);
         $dtcCodes = $this->getActiveDTCs($vehicleId);
-
+        
         return response()->json([
             'message' => 'Cache refreshed successfully',
             'latest_readings' => $latestReadings,
             'dtc_codes' => $dtcCodes
         ]);
-    }
-
-
-    /**
-     * Clasifica los sensores en categorías (primary, secondary, gps) y fusiona su metadata con el valor actual.
-     */
-    private function structureAndClassifySensors($vehicleSensors, $readings)
-    {
-        // Catálogo de PIDs fijos para el panel principal
-        $pidsCatalog = [
-            'rpm' => ['0x0C', '0xC'],
-            'speed' => ['0x0D', 'D', 'vel_kmh'],
-            'temperature' => ['0x05'],
-            'battery' => ['0x42', 'BAT', 'volt'],
-            'oilPressure' => ['0x0B', 'oil_press'],
-            'throttlePosition' => ['0x11'],
-            'fuelLevel' => ['0x2F'],
-        ];
-
-        $structuredSensors = [
-            'primary' => [],
-            'secondary' => [],
-            'gps' => [],
-        ];
-
-        // Obtener la lista plana de PIDs primarios
-        $primaryPids = collect($pidsCatalog)->flatten()->toArray();
-
-        foreach ($vehicleSensors as $vehicleSensor) {
-            $sensorMetadata = $vehicleSensor->sensor;
-            $pid = $sensorMetadata->pid;
-
-            // Usar el valor pre-calculado
-            $value = $readings[$pid] ?? null;
-
-            // Si el valor no es nulo (no tiene sentido enviar sensores sin valor al front)
-            if ($value === null) {
-                // Usamos 0 como fallback inicial, pero es mejor que el front maneje 'N/A'
-                $value = 0;
-            }
-
-            // Estructura de datos que el front necesita (plana y con valor)
-            $sensorData = [
-                'pid' => $pid,
-                'name' => $sensorMetadata->name,
-                'value' => (float) $value, // Aseguramos que sea float
-                'unit' => $sensorMetadata->unit,
-                'description' => $sensorMetadata->description,
-                'min_value' => (float) ($sensorMetadata->min_value ?? 0),
-                'max_value' => (float) ($sensorMetadata->max_value ?? 100),
-                'vehicle_sensor_id' => $vehicleSensor->id,
-            ];
-
-            // Clasificación
-            $category = null;
-            foreach ($pidsCatalog as $key => $pids) {
-                if (in_array($pid, $pids)) {
-                    $category = $key;
-                    break;
-                }
-            }
-
-            if ($category) {
-                $structuredSensors['primary'][$category] = $sensorData;
-            } elseif (in_array($pid, ['lat', 'lng', 'alt_m', 'rumbo', 'vel_kmh'])) {
-                // GPS y velocidad (si no fue mapeada como primaria)
-                $structuredSensors['gps'][$pid] = $sensorData;
-            } else {
-                $structuredSensors['secondary'][] = $sensorData;
-            }
-        }
-
-        // Agregar los sensores GPS al objeto readings si no tienen un valor
-        if (!isset($structuredSensors['gps']['lat'])) {
-            $structuredSensors['gps']['lat'] = ['pid' => 'lat', 'name' => 'Latitude', 'value' => 0, 'unit' => '°'];
-            $structuredSensors['gps']['lng'] = ['pid' => 'lng', 'name' => 'Longitude', 'value' => 0, 'unit' => '°'];
-        }
-
-        return $structuredSensors;
     }
 }

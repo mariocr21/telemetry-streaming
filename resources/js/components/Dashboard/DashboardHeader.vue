@@ -26,7 +26,7 @@ interface DisplayConnectionStatus {
     description: string;
 }
 
-const props = defineProps<{
+defineProps<{
     devices: Device[];
     selectedDeviceId: string | number;
     selectedVehicle: Vehicle | null;

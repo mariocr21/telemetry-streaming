@@ -125,9 +125,9 @@ const displayTemp = computed(() => Math.round(currentTemp.value))
         </div>
         
         <!-- Título en esquina superior izquierda -->
-        <div class="absolute top-0 left-0 text-xs font-semibold text-slate-300 uppercase">
+        <!-- <div class="absolute top-0 left-0 text-xs font-semibold text-slate-300 uppercase">
             {{ sensor.emoji || '🌡️' }} {{ sensor.title }}
-        </div>
+        </div> -->
         
         <!-- Estado en esquina inferior izquierda -->
         <div class="absolute bottom-0 left-0">

@@ -1,17 +1,17 @@
 <template>
-  <div class="w-[65%] relative bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+  <div class="relative rounded-xl border border-slate-700/50 overflow-hidden bg-slate-900/50">
     
-    <!-- Header del Mapa -->
-    <div class="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between pointer-events-none">
+    <div class="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
       <div class="flex items-center space-x-3 pointer-events-auto">
-        <div class="bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-slate-600/50">
+        
+        <div class="bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-slate-600/50 shadow-lg">
           <div class="flex items-center space-x-2">
             <div class="w-2 h-2 rounded-full" :class="gpsStatusColor"></div>
             <span class="text-sm font-medium text-white">{{ gpsStatusText }}</span>
           </div>
         </div>
         
-        <div v-if="hasValidGpsData" class="bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-slate-600/50">
+        <div v-if="hasValidGpsData" class="bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-slate-600/50 shadow-lg">
           <div class="flex items-center space-x-4 text-xs text-slate-300">
             <span>📍 {{ formatCoordinate(currentPosition?.lat) }}, {{ formatCoordinate(currentPosition?.lng) }}</span>
             <span v-if="currentSpeed !== null">🚗 {{ currentSpeed }} km/h</span>
@@ -21,15 +21,14 @@
         </div>
       </div>
 
-      <!-- Controles del Mapa -->
       <div class="flex items-center space-x-2 pointer-events-auto">
         <button 
           @click="centerOnVehicle" 
           :disabled="!hasValidGpsData"
-          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400"
           title="Centrar en vehículo"
         >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
@@ -46,37 +45,33 @@
           </svg>
         </button>
 
-        <!-- Botón para limpiar rastro -->
         <button 
           @click="clearTrail" 
           :disabled="trail.length === 0"
-          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-white"
           title="Limpiar rastro"
         >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
           </svg>
         </button>
 
-        <!-- Botón para ajustar vista -->
         <button 
           @click="fitToTrail" 
           :disabled="trail.length < 2"
-          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-white"
           title="Ajustar vista al recorrido"
         >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
           </svg>
         </button>
       </div>
     </div>
 
-    <!-- Contenedor del Mapa -->
-    <div id="vehicle-map" class="w-full h-full min-h-[500px]"></div>
+    <div id="vehicle-map" class="w-full h-full"></div>
 
-    <!-- Overlay de carga -->
-    <div v-if="isLoading" class="absolute inset-0 bg-slate-900/75 flex items-center justify-center z-20">
+    <div v-if="isLoading" class="absolute inset-0 bg-slate-900/75 flex items-center justify-center z-40">
       <div class="text-center">
         <svg class="animate-spin h-8 w-8 text-cyan-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -86,8 +81,7 @@
       </div>
     </div>
 
-    <!-- Sin datos GPS -->
-    <div v-if="!isLoading && !hasValidGpsData" class="absolute inset-0 bg-slate-900/75 flex items-center justify-center z-20">
+    <div v-if="!isLoading && !hasValidGpsData" class="absolute inset-0 bg-slate-900/75 flex items-center justify-center z-40">
       <div class="text-center max-w-sm">
         <div class="text-4xl text-slate-500 mb-4">🗺️</div>
         <h3 class="text-lg font-semibold text-slate-300 mb-2">Sin Datos GPS</h3>
@@ -106,7 +100,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Types
+// Tipos
 interface Position {
   lat: number
   lng: number
@@ -132,7 +126,7 @@ const props = defineProps<{
   connectionStatus: ConnectionStatus | null
 }>()
 
-// State
+// Estado
 const map = ref<L.Map | null>(null)
 const vehicleMarker = ref<L.Marker | null>(null)
 const trailPolyline = ref<L.Polyline | null>(null)
@@ -176,7 +170,7 @@ const gpsStatusText = computed(() => {
   return 'GPS Offline'
 })
 
-// Methods
+// Métodos
 const initializeMap = async () => {
   await nextTick()
   
@@ -184,21 +178,17 @@ const initializeMap = async () => {
     map.value.remove()
   }
 
-  // Esperar a que el contenedor esté completamente renderizado
   const container = document.getElementById('vehicle-map')
   if (!container) {
     console.error('❌ Contenedor del mapa no encontrado')
     return
   }
 
-  // Asegurar que el contenedor tenga dimensiones
   if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-    console.warn('⚠️ Contenedor sin dimensiones, esperando...')
     setTimeout(() => initializeMap(), 100)
     return
   }
 
-  // Inicializar mapa centrado en México (default)
   const defaultLat = 19.4326
   const defaultLng = -99.1332
   
@@ -210,17 +200,15 @@ const initializeMap = async () => {
     preferCanvas: false
   })
 
-  // Agregar capa de OpenStreetMap
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
+  // Usar una capa de mapa con estilo oscuro para coincidir con la UI
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+    attribution: '© CartoDB, © OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(map.value)
 
-  // Forzar recálculo del tamaño después de inicializar
   setTimeout(() => {
     if (map.value) {
       map.value.invalidateSize()
-      console.log('🗺️ Mapa redimensionado')
     }
   }, 200)
 
@@ -229,14 +217,18 @@ const initializeMap = async () => {
 
 const createVehicleIcon = () => {
   const iconSize = 32
-  let rotation = currentHeading.value || 0
+  // Aseguramos que la rotación es un número válido. Usamos 0 si es nulo.
+  let rotation = currentHeading.value === null ? 0 : currentHeading.value 
+  
+  // Color NEURONA: #0ea5e9 (cyan-500)
+  const cyanColor = '#0ea5e9' 
   
   // Crear SVG del vehículo con rotación
   const svgIcon = `
-    <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" style="transform: rotate(${rotation}deg)">
-      <circle cx="12" cy="12" r="11" fill="#1e293b" stroke="#0ea5e9" stroke-width="2"/>
-      <path d="M12 2L16 8H8L12 2Z" fill="#0ea5e9"/>
-      <circle cx="12" cy="12" r="2" fill="#0ea5e9"/>
+    <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" style="transform: rotate(${rotation}deg); transition: transform 0.5s;">
+      <circle cx="12" cy="12" r="11" fill="#1e293b" stroke="${cyanColor}" stroke-width="2"/>
+      <path d="M12 2L16 8H8L12 2Z" fill="${cyanColor}"/>
+      <circle cx="12" cy="12" r="2" fill="${cyanColor}"/>
     </svg>
   `
   
@@ -255,46 +247,41 @@ const updateVehiclePosition = (lat: number, lng: number) => {
   currentPosition.value = newPosition
 
   if (!vehicleMarker.value) {
-    // Crear marcador inicial
     vehicleMarker.value = L.marker([lat, lng], {
-      icon: createVehicleIcon()
+      icon: createVehicleIcon(),
+      // Usar 'true' para que la aguja siga el rumbo
+      rotationAngle: currentHeading.value !== null ? currentHeading.value : 0, 
+      rotationOrigin: 'center center' 
     }).addTo(map.value)
     
-    // Popup con información del vehículo
+    // Configurar el contenido del popup
     const popupContent = `
-      <div class="text-center">
-        <h3 class="font-semibold">${props.selectedVehicle?.make} ${props.selectedVehicle?.model}</h3>
-        ${props.selectedVehicle?.nickname ? `<p class="text-sm text-gray-600">${props.selectedVehicle.nickname}</p>` : ''}
+      <div class="text-center text-sm">
+        <h3 class="font-semibold text-white">${props.selectedVehicle?.make || 'Vehículo'} ${props.selectedVehicle?.model || 'Desconocido'}</h3>
+        ${props.selectedVehicle?.nickname ? `<p class="text-xs text-gray-400">(${props.selectedVehicle.nickname})</p>` : ''}
       </div>
     `
-    vehicleMarker.value.bindPopup(popupContent)
+    vehicleMarker.value.bindPopup(popupContent, { className: 'custom-popup-leaflet' })
     
-    // Centrar mapa en primera posición
     map.value.setView([lat, lng], 16)
   } else {
-    // Actualizar posición existente
     vehicleMarker.value.setLatLng([lat, lng])
-    vehicleMarker.value.setIcon(createVehicleIcon())
+    vehicleMarker.value.setIcon(createVehicleIcon()) // Actualiza el icono y la rotación si es necesario
     
-    // Seguimiento automático si está activo
+    // Tracking automático si está activo
     if (isTracking.value) {
       map.value.panTo([lat, lng])
     }
   }
 
-  // Actualizar trail
   updateTrail(newPosition)
-  
-  console.log('📍 Posición del vehículo actualizada:', { lat, lng })
 }
 
 const updateTrail = (position: Position) => {
   if (!map.value) return
 
-  // Agregar nueva posición al trail
   trail.value.push(position)
   
-  // Limitar número de puntos en el trail
   if (trail.value.length > maxTrailPoints) {
     trail.value.shift()
   }
@@ -308,9 +295,9 @@ const updateTrail = (position: Position) => {
     trailPolyline.value = L.polyline(
       trail.value.map(p => [p.lat, p.lng]),
       {
-        color: '#0ea5e9',
-        weight: 3,
-        opacity: 0.7,
+        color: '#0ea5e9', // Color NEURONA
+        weight: 4,
+        opacity: 0.9,
         smoothFactor: 1
       }
     ).addTo(map.value)
@@ -323,7 +310,6 @@ const centerOnVehicle = () => {
       animate: true,
       duration: 0.5
     })
-    console.log('🎯 Centrado en vehículo:', currentPosition.value)
   }
 }
 
@@ -332,7 +318,6 @@ const toggleTracking = () => {
   if (isTracking.value) {
     centerOnVehicle()
   }
-  console.log('🎯 Seguimiento:', isTracking.value ? 'ACTIVADO' : 'DESACTIVADO')
 }
 
 const clearTrail = () => {
@@ -341,62 +326,52 @@ const clearTrail = () => {
     map.value.removeLayer(trailPolyline.value)
     trailPolyline.value = null
   }
-  console.log('🧹 Rastro limpiado')
 }
 
 const fitToTrail = () => {
   if (!map.value || trail.value.length < 2) return
   
-  const group = new L.FeatureGroup()
+  const latLngs = trail.value.map(p => L.latLng(p.lat, p.lng))
+  const bounds = L.latLngBounds(latLngs)
   
-  // Agregar todos los puntos del trail al grupo
-  trail.value.forEach(point => {
-    group.addLayer(L.marker([point.lat, point.lng]))
+  map.value.fitBounds(bounds, {
+    padding: [30, 30] // Añadir padding
   })
-  
-  // Ajustar la vista para mostrar todo el trail
-  map.value.fitBounds(group.getBounds(), {
-    padding: [20, 20]
-  })
-  
-  console.log('🗺️ Vista ajustada al recorrido completo')
 }
 
 const formatCoordinate = (coord: number | null | undefined): string => {
-  if (coord === null || coord === undefined) return '---'
+  if (coord === null || coord === undefined || isNaN(coord)) return '---'
   return Number(coord).toFixed(6).toString()
 }
 
 const formatHeading = (heading: number | null): string => {
-  if (heading === null) return '---'
+  if (heading === null || isNaN(heading)) return '---'
   
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
   const index = Math.round(heading / 45) % 8
-  return `${Number(heading).toFixed(1)}° ${directions[index]}`
+  return `${Number(heading).toFixed(0)}° ${directions[index]}`
 }
 
-// Función para redimensionar el mapa manualmente
 const resizeMap = () => {
   if (map.value) {
     map.value.invalidateSize()
-    console.log('🔄 Mapa redimensionado manualmente')
   }
 }
 
-// Función para actualizar datos GPS desde el componente padre
 const updateGpsData = (sensorReadings: Record<string, number>) => {
-  // Actualizar coordenadas
+  // Asegurarse de que los valores sean números válidos
   const lat = sensorReadings[GPS_PIDS.LAT]
   const lng = sensorReadings[GPS_PIDS.LNG]
   
-  if (lat && lng) {
-    updateVehiclePosition(lat, lng)
-  }
-
-  // Actualizar otros datos GPS
+  // Extraer el resto de los datos
   currentSpeed.value = sensorReadings[GPS_PIDS.SPEED] || null
   currentAltitude.value = sensorReadings[GPS_PIDS.ALTITUDE] || null
   currentHeading.value = sensorReadings[GPS_PIDS.HEADING] || null
+
+  // Actualizar posición solo si las coordenadas son válidas
+  if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+    updateVehiclePosition(lat, lng)
+  }
 }
 
 // Exponer método para uso del componente padre
@@ -407,22 +382,22 @@ defineExpose({
 
 // Watchers
 watch(() => props.selectedVehicle, () => {
-  // Limpiar trail cuando cambie de vehículo
-  trail.value = []
-  if (trailPolyline.value && map.value) {
-    map.value.removeLayer(trailPolyline.value)
-    trailPolyline.value = null
-  }
+  // Resetear el estado del mapa al cambiar de vehículo
+  clearTrail()
   if (vehicleMarker.value && map.value) {
     map.value.removeLayer(vehicleMarker.value)
     vehicleMarker.value = null
   }
   currentPosition.value = null
+  currentSpeed.value = null
+  currentAltitude.value = null
+  currentHeading.value = null
+  // Re-inicializar el mapa para asegurar el centrado si es necesario, aunque `initializeMap` se encarga
 })
 
-// Lifecycle
+// Ciclo de vida
 onMounted(() => {
-  // Esperar a que el layout esté completamente cargado
+  // Inicializar mapa un poco después de montar para que el contenedor tenga dimensiones
   setTimeout(() => {
     initializeMap()
   }, 100)
@@ -440,10 +415,12 @@ onUnmounted(() => {
 /* Importar estilos de Leaflet */
 @import 'leaflet/dist/leaflet.css';
 
-/* Estilos para el marcador del vehículo */
+/* Estilos para el marcador del vehículo (usando el SVG) */
 .vehicle-marker {
   background: transparent !important;
   border: none !important;
+  /* Asegurar que el marcador esté siempre por encima de polylines/tiles */
+  z-index: 600 !important; 
 }
 
 /* Asegurar que el mapa tenga dimensiones correctas */
@@ -451,28 +428,30 @@ onUnmounted(() => {
   width: 100% !important;
   height: 100% !important;
   min-height: 500px !important;
+  /* El mapa en sí debe tener un z-index bajo */
+  z-index: 10; 
 }
 
-/* Asegurar que los controles sean clickeables */
-.pointer-events-none {
-  pointer-events: none;
-}
-
-.pointer-events-auto {
-  pointer-events: auto;
-}
-
-/* Estilos para Leaflet */
+/* Estilos para Leaflet que coinciden con la UI oscura */
 .leaflet-container {
-  background: #0f172a;
+  background: #0f172a; /* Slate-950 */
   font-family: inherit;
+  border-radius: 12px;
 }
 
-.leaflet-control-attribution {
-  background: rgba(15, 23, 42, 0.8) !important;
-  color: #94a3b8 !important;
+/* Estilos de Popup personalizados */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+
+/* Mejorar los botones de control */
 .leaflet-control-zoom a {
   background: rgba(15, 23, 42, 0.9) !important;
   color: white !important;
@@ -483,31 +462,8 @@ onUnmounted(() => {
   background: rgba(30, 41, 59, 0.9) !important;
 }
 
-.leaflet-popup-content-wrapper {
-  background: rgba(15, 23, 42, 0.95) !important;
-  color: white !important;
-  border-radius: 8px !important;
-}
-
-.leaflet-popup-tip {
-  background: rgba(15, 23, 42, 0.95) !important;
-}
-
-/* Fix para los iconos de zoom que pueden no aparecer */
-.leaflet-control-zoom-in:after {
-  content: '+';
-}
-
-.leaflet-control-zoom-out:after {
-  content: '−';
-}
-
-/* Mejorar los botones de control */
-button:not(:disabled):hover {
-  transform: scale(1.05);
-}
-
-button:not(:disabled):active {
-  transform: scale(0.95);
+/* Asegurar que los controles de Leaflet no se superpongan accidentalmente */
+.leaflet-control-container {
+    z-index: 30; /* Misma capa que el header del mapa para evitar colisión con el modal */
 }
 </style>
