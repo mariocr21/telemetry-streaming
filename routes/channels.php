@@ -53,3 +53,11 @@ Broadcast::channel('device.{deviceId}', function ($user, $deviceId) {
 Broadcast::channel('alerts.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
 });
+
+Broadcast::channel('log-monitoring', function ($user) {
+    // Se recomienda verificar un rol o permiso aquí, no solo si está logueado.
+    return $user != null; // Simplemente verifica que el usuario existe (está logueado)
+
+    // Si tu usuario tiene un campo 'is_admin':
+    return $user->isSuperAdmin(); 
+});

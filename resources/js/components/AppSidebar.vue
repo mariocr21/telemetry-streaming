@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Cpu, LayoutGrid, Users } from 'lucide-vue-next';
+import { Cpu, FileText, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -58,6 +58,13 @@ const allNavItems = computed(() => [
         title: 'Replays',
         href: '/replays',
         icon: Users,
+        hasPermission: true,
+        allowedForClients: false,
+    },
+    {
+        title: 'Logs',
+        href: '/log-monitor',
+        icon: FileText,
         hasPermission: true,
         allowedForClients: false,
     },

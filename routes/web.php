@@ -8,6 +8,7 @@ use App\Http\Controllers\RegisterVehiculeController;
 use App\Http\Controllers\ReplayController;
 use App\Http\Controllers\TelemetryController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\LogMonitorController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -16,7 +17,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
-
+Route::get('/log-monitor', [LogMonitorController::class, 'index'])
+    ->name('log.monitor');
 Route::resource('device-inventory', DeviceInventoryController::class)->middleware(['auth', 'verified']);
 
 Route::resource('clients', ClientController::class)->middleware(['auth', 'verified']);
