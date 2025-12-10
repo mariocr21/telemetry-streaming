@@ -7,11 +7,12 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class VehicleTelemetryEvent implements ShouldBroadcast
+class VehicleTelemetryEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -35,12 +36,12 @@ class VehicleTelemetryEvent implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        Log::info('Broadcasting telemetry data', [
-            'vehicle_id' => $this->vehicleId,
-            'device_id' => $this->deviceId,
-            'sensors_count' => count($this->telemetryData),
-            'dtc_codes_count' => count($this->dtcCodes),
-        ]);
+        // Log::info('Broadcasting telemetry data', [
+        //     'vehicle_id' => $this->vehicleId,
+        //     'device_id' => $this->deviceId,
+        //     'sensors_count' => count($this->telemetryData),
+        //     'dtc_codes_count' => count($this->dtcCodes),
+        // ]);
 
         return [
             new Channel('telemetry'),
