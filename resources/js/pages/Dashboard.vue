@@ -675,8 +675,7 @@ onUnmounted(() => {
                             <span class="sensor-count">({{ secondarySensors.length }})</span>
                         </h3>
                         
-                        <div v-if="secondarySensors.length > 0" class="sensors-scroll">
-                            <div class="sensors-track">
+                        <div v-if="secondarySensors.length > 0" class="flex flex-wrap gap-2 md:gap-4 justify-center">
                                 <div
                                     v-for="sensorData in secondarySensors"
                                     :key="sensorData?.id"
@@ -688,7 +687,6 @@ onUnmounted(() => {
                                         <span class="sensor-unit">{{ sensorData?.sensor?.sensor?.unit }}</span>
                                     </span>
                                 </div>
-                            </div>
                         </div>
                         
                         <div v-else class="empty-sensors">
@@ -1183,27 +1181,6 @@ onUnmounted(() => {
 .sensors-scroll::-webkit-scrollbar-thumb {
     background-color: var(--color-primary-40);
     border-radius: 4px;
-}
-
-.sensors-track {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    gap: 10px;
-    padding-bottom: 8px;
-}
-
-@media (min-width: 640px) {
-    .sensors-track {
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-}
-
-@media (min-width: 768px) {
-    .sensors-track {
-        gap: 16px;
-    }
 }
 
 /* ===== SENSOR ITEM ===== */
