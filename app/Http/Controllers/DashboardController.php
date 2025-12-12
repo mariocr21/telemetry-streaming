@@ -46,10 +46,16 @@ class DashboardController extends Controller
     public function getDeviceVehicleActive(Request $request, ClientDevice $clientDevice)
     {
         try {
+            Log::info('Retrieving active vehicle for device', [
+                'device_id' => $clientDevice->id,
+            ]);
 
             $vehicle = $clientDevice->vehicles()->where('status', true)->first();
 
             if (!$vehicle) {
+                Log::warning('No active vehicle found for device', [
+                    'device_id' => $clientDevice->id,
+                ]);
                 return response()->json([
                     'message' => 'No active vehicle found for this device.',
                 ], 404);
@@ -80,6 +86,10 @@ class DashboardController extends Controller
 
             Log::info('Vehicle data retrieved with latest readings', [
                 'vehicle_id' => $vehicle->id,
+            ]);
+
+            Log::info('Structured Sensors', [
+                'structured_sensors' => $structuredSensors,
             ]);
 
             return response()->json([
