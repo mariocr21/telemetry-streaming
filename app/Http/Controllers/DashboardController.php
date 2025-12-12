@@ -417,6 +417,7 @@ class DashboardController extends Controller
             'oilPressure' => ['0x0B', 'oil_press'],
             'throttlePosition' => ['0x11'],
             'fuelLevel' => ['0x2F'],
+            'GEAR' => ['GEAR'],
         ];
 
         $structuredSensors = [

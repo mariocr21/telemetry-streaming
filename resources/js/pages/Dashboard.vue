@@ -10,9 +10,11 @@ import SpeedometerWidget from '@/components/Dashboard/SpeedometerWidget.vue';
 import TachometerWidget from '@/components/Dashboard/TachometerWidget.vue';
 import TemperatureWidget from '@/components/Dashboard/TemperatureGaugeWidget.vue';
 import ThrottleWidget from '@/components/Dashboard/ThrottleWidget.vue';
+import TransmissionGearWidget from '@/components/Dashboard/TransmissionGearWidget.vue';
 import DashboardHeader from '@/components/DashboardHeader.vue';
 import DeviceSelectModal from '@/components/DeviceSelectModal.vue';
 import DtcWidget from '@/components/Dtcwidget.vue';
+import BatteryWidget from '@/components/Dashboard/BatteryWidget.vue';
 import { useI18n } from '@/i18n/useI18n';
 
 const { t } = useI18n();
@@ -64,15 +66,15 @@ const selectedDevice = ref<Device | null>(null);
 const selectedVehicle = ref<Vehicle | null>(null);
 const showDeviceModal = ref(false);
 
-const lastDataReceivedAt = ref<Date | null>(null);  // Última vez que Reverb envió datos
-const vehicleLoadedAt = ref<Date | null>(null);      // Cuando se cargó el vehículo
+const lastDataReceivedAt = ref<Date | null>(null); // Última vez que Reverb envió datos
+const vehicleLoadedAt = ref<Date | null>(null); // Cuando se cargó el vehículo
 const connectionCheckInterval = ref<NodeJS.Timeout | null>(null); // Interval para verificar estado
 
 // --- CONSTANTES DE TIEMPO (en milisegundos) ---
-const ONLINE_THRESHOLD = 1 * 60 * 1000;      // 2 minutos - después de esto: "pendiente"
-const OFFLINE_THRESHOLD = 5 * 60 * 1000;     // 5 minutos - después de esto: "desconectado"
+const ONLINE_THRESHOLD = 1 * 60 * 1000; // 2 minutos - después de esto: "pendiente"
+const OFFLINE_THRESHOLD = 5 * 60 * 1000; // 5 minutos - después de esto: "desconectado"
 const INITIAL_WAIT_THRESHOLD = 1 * 60 * 1000; // 1 minuto - si no hay datos después de cargar: "desconectado"
-const CHECK_INTERVAL = 10 * 1000;             // Verificar cada 10 segundos
+const CHECK_INTERVAL = 10 * 1000; // Verificar cada 10 segundos
 
 // Estado para los datos pre-estructurados del backend
 const primarySensorsData = ref<Record<string, any>>({});
@@ -102,7 +104,9 @@ const mapWidgetRef = ref<any>(null);
 
 const createWidgetData = (data: any, key: string, emoji?: string) => {
     if (!data) return null;
-    const value = typeof data.value === 'number' ? data.value : 0;
+
+    //para sensores que no son de gps se manda con 2 decimales
+    const value = typeof data.value === 'number' ? parseFloat(data.value.toFixed(2)) : 0;
 
     return {
         id: key,
@@ -131,6 +135,7 @@ const tempWidgetData = computed(() => createWidgetData(primarySensorsData.value.
 const batteryWidgetData = computed(() => createWidgetData(primarySensorsData.value.battery, 'battery', '🔋'));
 const fuelWidgetData = computed(() => createWidgetData(primarySensorsData.value.fuelLevel, 'fuelLevel', '⛽'));
 const throttleWidgetData = computed(() => createWidgetData(primarySensorsData.value.throttlePosition, 'throttlePosition', '⚙️'));
+const gearWidgetData = computed(() => createWidgetData(primarySensorsData.value.GEAR, 'GEAR', '⚙️'));
 
 const secondarySensors = computed(() => {
     return secondarySensorsData.value.map((sensorData: any) => createWidgetData(sensorData, sensorData.pid));
@@ -138,7 +143,7 @@ const secondarySensors = computed(() => {
 
 const displayConnectionStatus = computed(() => {
     const now = Date.now();
-    
+
     // Si no hay vehículo seleccionado
     if (!selectedVehicle.value) {
         return {
@@ -148,13 +153,13 @@ const displayConnectionStatus = computed(() => {
             description: 'Selecciona un vehículo',
         };
     }
-    
+
     // Si nunca hemos recibido datos de Reverb
     if (!lastDataReceivedAt.value) {
         // Verificar si ha pasado más de 1 minuto desde que se cargó el vehículo
         if (vehicleLoadedAt.value) {
             const timeSinceLoad = now - vehicleLoadedAt.value.getTime();
-            
+
             if (timeSinceLoad >= INITIAL_WAIT_THRESHOLD) {
                 // Más de 1 minuto sin datos después de cargar = desconectado
                 return {
@@ -174,7 +179,7 @@ const displayConnectionStatus = computed(() => {
                 };
             }
         }
-        
+
         // Sin fecha de carga (no debería pasar)
         return {
             text: t('connectionStatusOffline') || 'Sin conexión',
@@ -183,10 +188,10 @@ const displayConnectionStatus = computed(() => {
             description: 'Sin datos disponibles',
         };
     }
-    
+
     // Tenemos datos - calcular tiempo desde última recepción
     const timeSinceLastData = now - lastDataReceivedAt.value.getTime();
-    
+
     // CASO 1: Menos de 2 minutos = EN LÍNEA (tiempo real)
     if (timeSinceLastData < ONLINE_THRESHOLD) {
         const secondsAgo = Math.floor(timeSinceLastData / 1000);
@@ -197,7 +202,7 @@ const displayConnectionStatus = computed(() => {
             description: secondsAgo < 5 ? 'Recibiendo datos' : `Hace ${secondsAgo}s`,
         };
     }
-    
+
     // CASO 2: Entre 2 y 5 minutos = PENDIENTE
     if (timeSinceLastData < OFFLINE_THRESHOLD) {
         const minutesAgo = Math.floor(timeSinceLastData / 60000);
@@ -208,7 +213,7 @@ const displayConnectionStatus = computed(() => {
             description: `Última actualización hace ${minutesAgo} min`,
         };
     }
-    
+
     // CASO 3: Más de 5 minutos = DESCONECTADO
     const minutesAgo = Math.floor(timeSinceLastData / 60000);
     return {
@@ -224,7 +229,7 @@ const startConnectionCheck = () => {
     if (connectionCheckInterval.value) {
         clearInterval(connectionCheckInterval.value);
     }
-    
+
     // Crear nuevo interval para forzar re-evaluación del computed
     connectionCheckInterval.value = setInterval(() => {
         // Forzar actualización del computed tocando una ref reactiva
@@ -240,7 +245,6 @@ const stopConnectionCheck = () => {
         connectionCheckInterval.value = null;
     }
 };
-
 
 const lastUpdateFormatted = computed(() => {
     return lastUpdate.value
@@ -282,12 +286,11 @@ const cleanupWebSocketConnections = () => {
     currentVehicleId.value = null;
     isConnected.value = false;
     isRealTimeActive.value = false;
-    
+
     // ⬇️ AGREGAR: Reset de timestamps
     lastDataReceivedAt.value = null;
     vehicleLoadedAt.value = null;
 };
-
 
 const setupWebSocketConnection = () => {
     if (!selectedVehicle.value || !window.Echo) {
@@ -349,9 +352,9 @@ const handleTelemetryUpdate = (data: any) => {
 
         // ⬇️ AGREGAR ESTA LÍNEA - Registrar momento de recepción de datos
         lastDataReceivedAt.value = new Date();
-        
+
         // ... resto del código existente ...
-        
+
         isRealTimeActive.value = true;
 
         if (realTimeTimeout.value) {
@@ -401,14 +404,15 @@ const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
     const pidMapping: Record<string, string> = {
         '0x0C': 'rpm',
         '0x0D': 'speed',
-        'vel_kmh': 'speed',
+        vel_kmh: 'speed',
         '0x05': 'temperature',
         '0x42': 'battery',
-        'BAT': 'battery',
-        'volt': 'battery',
+        BAT: 'battery',
+        volt: 'battery',
         '0x0B': 'oilPressure',
         '0x11': 'throttlePosition',
         '0x2F': 'fuelLevel',
+        "GEAR": 'GEAR',
     };
 
     const key = pidMapping[pid];
@@ -481,11 +485,11 @@ const fetchVehicleData = async (deviceId: number) => {
         connectionStatus.value = null;
         sensorReadings.value = {};
         isRealTimeActive.value = false;
-        
+
         // ⬇️ AGREGAR: Reset de timestamps de conexión
         lastDataReceivedAt.value = null;
         vehicleLoadedAt.value = null;
-        
+
         isLoading.value = true;
         error.value = null;
 
@@ -557,7 +561,7 @@ onMounted(() => {
 onUnmounted(() => {
     cleanupWebSocketConnections();
     stopConnectionCheck(); // ⬇️ AGREGAR
-    
+
     if (realTimeTimeout.value) {
         clearTimeout(realTimeTimeout.value);
     }
@@ -570,7 +574,6 @@ onUnmounted(() => {
 
         <!-- Container principal con padding responsivo -->
         <div class="dashboard-container">
-            
             <!-- Header -->
             <div class="header-section">
                 <DashboardHeader
@@ -582,10 +585,8 @@ onUnmounted(() => {
 
             <!-- Contenido principal -->
             <div class="main-content">
-                
                 <!-- Layout principal: Stack en móvil, side-by-side en desktop -->
                 <div class="main-layout">
-                    
                     <!-- Mapa -->
                     <div class="map-section">
                         <div class="map-container">
@@ -602,10 +603,8 @@ onUnmounted(() => {
 
                     <!-- Panel de Widgets -->
                     <div class="widgets-section">
-                        
                         <!-- Grid de widgets primarios -->
                         <div class="widgets-grid">
-                            
                             <!-- RPM Widget -->
                             <div v-if="rpmWidgetData" class="widget-card widget-gauge">
                                 <span class="widget-label">RPM</span>
@@ -629,17 +628,17 @@ onUnmounted(() => {
                                     <TemperatureWidget :sensor="tempWidgetData" />
                                 </div>
                             </div>
+                            <div v-if="gearWidgetData" class="widget-card widget-gauge">
+                                <span class="widget-label"> {{ t('transmissionGearTitle') || 'Transmisión' }} </span>
+                                <div class="gauge-container">
+                                    <TransmissionGearWidget :sensor="gearWidgetData" />
+                                </div>
+                            </div>
 
                             <!-- Batería Widget -->
                             <div v-if="batteryWidgetData" class="widget-card widget-simple">
                                 <span class="widget-label">{{ t('batteryVoltageTitle') || 'Batería' }}</span>
-                                <div class="value-container">
-                                    <span class="value-main">
-                                        {{ batteryWidgetData.value || 'N/A' }}
-                                    </span>
-                                    <span class="value-unit">{{ batteryWidgetData.sensor.sensor.unit || 'V' }}</span>
-                                </div>
-                                <span class="update-time">{{ lastUpdateFormatted }}</span>
+                                <BatteryWidget :sensor="batteryWidgetData" />
                             </div>
 
                             <!-- Combustible Widget -->
@@ -664,31 +663,27 @@ onUnmounted(() => {
 
                 <!-- Sección inferior: DTC y Sensores Adicionales -->
                 <div class="bottom-section">
-                    
                     <!-- DTC Widget -->
-                    <DtcWidget v-if="dtcCodes.length > 0" :dtc-codes="dtcCodes" class="dtc-widget" :is-real-time-active="isRealTimeActive"/>
+                    <DtcWidget v-if="dtcCodes.length > 0" :dtc-codes="dtcCodes" class="dtc-widget" :is-real-time-active="isRealTimeActive" />
 
                     <!-- Sensores Adicionales -->
                     <div class="secondary-sensors-card">
                         <h3 class="section-title">
-                            {{ t('additionalSensorsTitle') || 'Sensores Adicionales' }} 
+                            {{ t('additionalSensorsTitle') || 'Sensores Adicionales' }}
                             <span class="sensor-count">({{ secondarySensors.length }})</span>
                         </h3>
-                        
-                        <div v-if="secondarySensors.length > 0" class="flex flex-wrap gap-2 md:gap-4 justify-center">
-                                <div
-                                    v-for="sensorData in secondarySensors"
-                                    :key="sensorData?.id"
-                                    class="sensor-item"
-                                >
-                                    <span class="sensor-name">{{ sensorData?.title }}</span>
-                                    <span class="sensor-value">
-                                        {{ sensorData?.value ?? 'N/A' }}
-                                        <span class="sensor-unit">{{ sensorData?.sensor?.sensor?.unit }}</span>
-                                    </span>
-                                </div>
+
+                        <div v-if="secondarySensors.length > 0" class="flex flex-wrap justify-center gap-2 md:gap-4">
+                            <div v-for="sensorData in secondarySensors" :key="sensorData?.id" class="sensor-item">
+                                <span class="sensor-name">{{ sensorData?.title }}</span>
+                                <span class="sensor-value">
+                                    <!-- validar si es string o number -->
+                                    {{ typeof sensorData?.value === 'number' ? sensorData.value.toFixed(2) : sensorData?.value ?? 'N/A' }}
+                                    <span class="sensor-unit">{{ sensorData?.sensor?.sensor?.unit }}</span>
+                                </span>
+                            </div>
                         </div>
-                        
+
                         <div v-else class="empty-sensors">
                             {{ t('noAdditionalSensors') || 'No hay sensores adicionales configurados.' }}
                         </div>
@@ -915,7 +910,6 @@ onUnmounted(() => {
     padding: 12px;
     transition: all 0.2s ease;
 }
-
 
 @media (min-width: 640px) {
     .widget-card {
@@ -1298,11 +1292,11 @@ onUnmounted(() => {
     .map-container {
         height: 180px;
     }
-    
+
     .widget-gauge {
         min-height: 110px;
     }
-    
+
     .gauge-container {
         max-width: 80px;
     }
@@ -1318,7 +1312,8 @@ onUnmounted(() => {
 
 /* ===== ANIMACIÓN PARA REAL-TIME ===== */
 @keyframes pulse-border {
-    0%, 100% {
+    0%,
+    100% {
         border-color: var(--color-primary-20);
     }
     50% {
