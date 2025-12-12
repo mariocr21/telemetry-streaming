@@ -118,7 +118,7 @@ class DashboardController extends Controller
     private function getLatestSensorReadings($vehicleId)
     {
         Log::info('Fetching latest sensor readings for vehicle', ['vehicle_id' => $vehicleId]);
-
+        try {
         // Primero intentar desde caché
         $cachedData = Cache::get("vehicle_telemetry_{$vehicleId}");
 
@@ -184,6 +184,19 @@ class DashboardController extends Controller
             'source' => 'database',
             'timestamp' => $latestTimestamp?->toISOString() ?? now()->toISOString()
         ];
+        
+        } catch (\Throwable $th) {
+            Log::error('Error fetching latest sensor readings', [
+                'vehicle_id' => $vehicleId,
+                'error' => $th->getMessage(),
+                'file' => basename($th->getFile()) . ':' . $th->getLine(),
+            ]);
+            return [
+                'data' => [],
+                'source' => 'error',
+                'timestamp' => now()->toISOString()
+            ];
+        }
     }
 
     /**
