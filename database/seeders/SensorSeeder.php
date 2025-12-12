@@ -254,6 +254,20 @@ class SensorSeeder extends Seeder
                 'calculation_formula' => 'A * 100 / 255'
             ],
             [
+                'pid' => 't_pedal',
+                'name' => 'Throttle Position',
+                'description' => 'Posición del acelerador',
+                'category' => 'engine',
+                'unit' => '%',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => 100,
+                'data_bytes' => 1,
+                'is_standard' => true,
+                'requires_calculation' => false,
+                'calculation_formula' => 'A * 100 / 255'
+            ],
+            [
                 'pid' => '0x12',
                 'name' => 'Commanded Secondary Air Status',
                 'description' => 'Estado del aire secundario comandado',
@@ -680,7 +694,45 @@ class SensorSeeder extends Seeder
                 'is_standard' => false,
                 'requires_calculation' => false,
             ],
-
+            [
+                'pid' => 'LAMDA',
+                'name' => 'Fuel Mixture (Lambda)',
+                'description' => 'Mezcla aire-combustible (Lambda)',
+                'category' => 'fuel',
+                'unit' => 'L/100km',
+                'data_type' => 'numeric',
+                'min_value' => 0,
+                'max_value' => 60,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => false,
+            ],
+            [
+                'pid' => 'FRENO',
+                'name' => 'Brake',
+                'description' => '',
+                'category' => 'fuel',
+                'unit' => 'false/true',
+                'data_type' => 'boolean',
+                'min_value' => 0,
+                'max_value' => 60,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => false,
+            ],
+            [
+                'pid' => 'GEAR',
+                'name' => 'Gear',
+                'description' => 'Posición de la transmisión',
+                'category' => 'Mechanical',
+                'unit' => 'gear_position',
+                'data_type' => 'string',
+                'min_value' => 0,
+                'max_value' => 60,
+                'data_bytes' => 4,
+                'is_standard' => false,
+                'requires_calculation' => false,
+            ],            
         ];
 
         foreach ($sensors as $sensorData) {
