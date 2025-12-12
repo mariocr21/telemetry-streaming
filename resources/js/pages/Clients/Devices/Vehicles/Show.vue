@@ -2,6 +2,7 @@
 import ExportSensorDataModal from '@/components/ExportSensorDataModal.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { Button } from '@/components/ui/button';
+import axios from 'axios';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import CardHeader from '@/components/ui/CardHeader.vue';
@@ -272,18 +273,16 @@ const copyToClipboard = async (text: string, type: string) => {
 
 const toggleSensor = async (vehicleSensor: VehicleSensor) => {
     try {
-        const response = await fetch(route('clients.devices.vehicles.toggle-sensor', [props.client.id, props.device.id, props.vehicle.id]), {
-            method: 'POST',
+        const response = await axios.post(route('clients.devices.vehicles.toggle-sensor', [props.client.id, props.device.id, props.vehicle.id]), {
+            vehicle_sensor_id: vehicleSensor.id,
+        }, {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
             },
-            body: JSON.stringify({
-                vehicle_sensor_id: vehicleSensor.id,
-            }),
         });
 
-        if (response.ok) {
+        if (response.status === 200) {
             // Actualizar el estado local
             vehicleSensor.is_active = !vehicleSensor.is_active;
         }

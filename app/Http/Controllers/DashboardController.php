@@ -54,7 +54,12 @@ class DashboardController extends Controller
         }
 
         // Cargar el vehículo con sus sensores
-        $vehicle->load('vehicleSensors.sensor');
+        $vehicle->load([
+            'vehicleSensors' => function ($query) {
+                $query->where('is_active', true);
+            },
+            'vehicleSensors.sensor'
+        ]);
 
         // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
         $latestReadings = $this->getLatestSensorReadings($vehicle->id);

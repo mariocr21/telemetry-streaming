@@ -464,6 +464,7 @@ class VehicleController extends Controller
 
         // Obtener los sensores con datos recientes
         $sensorsWithRecentData = $vehicle->vehicleSensors()
+            ->orderBy('is_active', 'desc')
             ->with(['sensor'])
             ->get()
             ->map(function ($vehicleSensor) use ($vehicle) {
