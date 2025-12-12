@@ -45,80 +45,56 @@ class DashboardController extends Controller
      */
     public function getDeviceVehicleActive(Request $request, ClientDevice $clientDevice)
     {
-        try {
-            Log::info('Retrieving active vehicle for device', [
-                'device_id' => $clientDevice->id,
-            ]);
+        $vehicle = $clientDevice->vehicles()->where('status', true)->first();
 
-            $vehicle = $clientDevice->vehicles()->where('status', true)->first();
-
-            if (!$vehicle) {
-                Log::warning('No active vehicle found for device', [
-                    'device_id' => $clientDevice->id,
-                ]);
-                return response()->json([
-                    'message' => 'No active vehicle found for this device.',
-                ], 404);
-            }
-
-            // Cargar el vehículo con sus sensores
-            $vehicle->load([
-                'vehicleSensors' => function ($query) {
-                    $query->where('is_active', true);
-                },
-                'vehicleSensors.sensor'
-            ]);
-
-            // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
-            $latestReadings = $this->getLatestSensorReadings($vehicle->id);
-
-            // Determinar el estado de conexión basado en la última lectura
-            $connectionStatus = $this->determineConnectionStatus($vehicle->id);
-
-            // Obtener códigos DTC activos
-            $dtcCodes = $this->getActiveDTCs($vehicle->id);
-
-            // CLASIFICAR Y ESTRUCTURAR LOS SENSORES
-            $structuredSensors = $this->structureAndClassifySensors(
-                $vehicle->vehicleSensors,
-                $latestReadings['data']
-            );
-
-            Log::info('Vehicle data retrieved with latest readings', [
-                'vehicle_id' => $vehicle->id,
-            ]);
-
-            Log::info('Structured Sensors', [
-                'structured_sensors' => $structuredSensors,
-            ]);
-
+        if (!$vehicle) {
             return response()->json([
-                'vehicle' => $vehicle,
-                'latest_readings' => $latestReadings,
-                'structured_sensors' => $structuredSensors, // CLAVE: Datos pre-estructurados
-                'connection_status' => $connectionStatus,
-                'dtc_codes' => $dtcCodes
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error retrieving vehicle data', [
-                'device_id' => $clientDevice->id,
-                'error' => $e->getMessage(),
-                'file' => basename($e->getFile()) . ':' . $e->getLine(),
-            ]);
-
-            return response()->json([
-                'message' => 'Internal server error',
-            ], 500);
+                'message' => 'No active vehicle found for this device.',
+            ], 404);
         }
-    }
 
+        // Cargar el vehículo con sus sensores
+        $vehicle->load([
+            'vehicleSensors' => function ($query) {
+                $query->where('is_active', true);
+            },
+            'vehicleSensors.sensor'
+        ]);
+
+        // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
+        $latestReadings = $this->getLatestSensorReadings($vehicle->id);
+
+        // Determinar el estado de conexión basado en la última lectura
+        $connectionStatus = $this->determineConnectionStatus($vehicle->id);
+
+        // Obtener códigos DTC activos
+        $dtcCodes = $this->getActiveDTCs($vehicle->id);
+
+        // CLASIFICAR Y ESTRUCTURAR LOS SENSORES
+        $structuredSensors = $this->structureAndClassifySensors(
+            $vehicle->vehicleSensors,
+            $latestReadings['data']
+        );
+
+        Log::info('Vehicle data retrieved with latest readings', [
+            'vehicle_id' => $vehicle->id,
+        ]);
+
+        return response()->json([
+            'vehicle' => $vehicle,
+            'latest_readings' => $latestReadings,
+            'structured_sensors' => $structuredSensors, // CLAVE: Datos pre-estructurados
+            'connection_status' => $connectionStatus,
+            'dtc_codes' => $dtcCodes
+        ]);
+    }
     /**
-     * Obtener las últimas lecturas de cada sensor del vehículo
+     * Obtener las últimas lecturas de cada sensor del vehículo - VERSIÓN CORREGIDA
      */
     private function getLatestSensorReadings($vehicleId)
     {
         Log::info('Fetching latest sensor readings for vehicle', ['vehicle_id' => $vehicleId]);
-        try {
+
         // Primero intentar desde caché
         $cachedData = Cache::get("vehicle_telemetry_{$vehicleId}");
 
@@ -133,68 +109,97 @@ class DashboardController extends Controller
 
         Log::info('No cache found, querying database for latest readings', ['vehicle_id' => $vehicleId]);
 
-        // Usar tu estructura existente: registers -> vehicle_sensors -> vehicles
-        $twentyFourHoursAgo = now()->subHours(24);
+        try {
+            // Usar tu estructura existente: registers -> vehicle_sensors -> vehicles
+            $twentyFourHoursAgo = now()->subHours(24);
 
-        $latestReadings = DB::table('registers as r')
-            ->join('vehicle_sensors as vs', 'r.vehicle_sensor_id', '=', 'vs.id')
-            ->join('sensors as s', 'vs.sensor_id', '=', 's.id')
-            ->select([
-                's.pid',
-                's.name',
-                's.unit',
-                's.requires_calculation',
-                's.calculation_formula',
-                'r.value as raw_value',
-                'r.recorded_at',
-                DB::raw('ROW_NUMBER() OVER (PARTITION BY s.pid ORDER BY r.recorded_at DESC) as row_num')
-            ])
-            ->where('vs.vehicle_id', $vehicleId) // Usar vehicle_id desde vehicle_sensors
-            ->where('r.recorded_at', '>=', $twentyFourHoursAgo)
-            ->get()
-            ->where('row_num', 1) // Solo la lectura más reciente de cada sensor
-            ->keyBy('pid');
+            // SOLUCIÓN 1: Usar una subconsulta para obtener solo las lecturas más recientes
+            $latestReadings = DB::table('registers as r')
+                ->join('vehicle_sensors as vs', 'r.vehicle_sensor_id', '=', 'vs.id')
+                ->join('sensors as s', 'vs.sensor_id', '=', 's.id')
+                ->select([
+                    's.pid',
+                    's.name',
+                    's.unit',
+                    's.requires_calculation',
+                    's.calculation_formula',
+                    'r.value as raw_value',
+                    'r.recorded_at'
+                ])
+                ->where('vs.vehicle_id', $vehicleId)
+                ->where('r.recorded_at', '>=', $twentyFourHoursAgo)
+                ->whereIn('r.id', function ($query) use ($vehicleId, $twentyFourHoursAgo) {
+                    $query->select(DB::raw('MAX(r2.id)'))
+                        ->from('registers as r2')
+                        ->join('vehicle_sensors as vs2', 'r2.vehicle_sensor_id', '=', 'vs2.id')
+                        ->join('sensors as s2', 'vs2.sensor_id', '=', 's2.id')
+                        ->where('vs2.vehicle_id', $vehicleId)
+                        ->where('r2.recorded_at', '>=', $twentyFourHoursAgo)
+                        ->groupBy('s2.pid');
+                })
+                ->get();
 
-        $processedReadings = [];
-        $latestTimestamp = null;
+            $processedReadings = [];
+            $latestTimestamp = null;
 
-        foreach ($latestReadings as $reading) {
-            $processedValue = $this->processSensorValue(
-                $reading->raw_value,
-                $reading
-            );
+            foreach ($latestReadings as $reading) {
+                // Validar que el PID no sea nulo
+                if (empty($reading->pid)) {
+                    Log::warning('Skipping reading with null PID', [
+                        'vehicle_id' => $vehicleId,
+                        'reading' => $reading
+                    ]);
+                    continue;
+                }
 
-            $processedReadings[$reading->pid] = $processedValue;
+                $processedValue = $this->processSensorValue(
+                    $reading->raw_value,
+                    $reading
+                );
 
-            // Mantener track del timestamp más reciente
-            $recordedAt = Carbon::parse($reading->recorded_at);
-            if (!$latestTimestamp || $recordedAt->gt($latestTimestamp)) {
-                $latestTimestamp = $recordedAt;
+                $processedReadings[$reading->pid] = $processedValue;
+
+                // Mantener track del timestamp más reciente - con validación
+                if (!empty($reading->recorded_at)) {
+                    try {
+                        $recordedAt = Carbon::parse($reading->recorded_at);
+                        if (!$latestTimestamp || $recordedAt->gt($latestTimestamp)) {
+                            $latestTimestamp = $recordedAt;
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error parsing recorded_at timestamp', [
+                            'vehicle_id' => $vehicleId,
+                            'recorded_at' => $reading->recorded_at,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
             }
-        }
 
-        Log::info('Latest readings retrieved from database', [
-            'vehicle_id' => $vehicleId,
-            'readings_count' => count($processedReadings),
-            'latest_timestamp' => $latestTimestamp?->toISOString()
-        ]);
+            Log::info('Latest readings retrieved from database', [
+                'vehicle_id' => $vehicleId,
+                'readings_count' => count($processedReadings),
+                'latest_timestamp' => $latestTimestamp?->toISOString()
+            ]);
 
-        return [
-            'data' => $processedReadings,
-            'source' => 'database',
-            'timestamp' => $latestTimestamp?->toISOString() ?? now()->toISOString()
-        ];
-        
-        } catch (\Throwable $th) {
+            return [
+                'data' => $processedReadings,
+                'source' => 'database',
+                'timestamp' => $latestTimestamp?->toISOString() ?? now()->toISOString()
+            ];
+        } catch (\Exception $e) {
             Log::error('Error fetching latest sensor readings', [
                 'vehicle_id' => $vehicleId,
-                'error' => $th->getMessage(),
-                'file' => basename($th->getFile()) . ':' . $th->getLine(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+
+            // Retornar estructura vacía en caso de error
             return [
                 'data' => [],
                 'source' => 'error',
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
+                'error' => $e->getMessage()
             ];
         }
     }
@@ -204,7 +209,6 @@ class DashboardController extends Controller
      */
     private function getActiveDTCs($vehicleId)
     {
-        Log::info('Fetching active DTC codes for vehicle', ['vehicle_id' => $vehicleId]);
         // Primero intentar obtener desde caché
         $cachedDtcCodes = Cache::get("vehicle_dtc_{$vehicleId}");
 
@@ -286,7 +290,6 @@ class DashboardController extends Controller
      */
     private function determineConnectionStatus($vehicleId)
     {
-        Log::info('Determining connection status for vehicle', ['vehicle_id' => $vehicleId]);
         // Usar tu estructura existente: buscar a través de vehicle_sensors
         $lastRegister = Register::whereHas('sensor', function ($query) use ($vehicleId) {
             $query->where('vehicle_id', $vehicleId);
@@ -446,9 +449,6 @@ class DashboardController extends Controller
      */
     private function structureAndClassifySensors($vehicleSensors, $readings)
     {
-        Log::info('Structuring and classifying sensors', [
-            'vehicle_sensor_count' => count($vehicleSensors),
-        ]);
         // Catálogo de PIDs fijos para el panel principal
         $pidsCatalog = [
             'rpm' => ['0x0C', '0xC'],
