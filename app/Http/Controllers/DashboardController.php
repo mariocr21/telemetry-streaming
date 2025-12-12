@@ -191,6 +191,7 @@ class DashboardController extends Controller
      */
     private function getActiveDTCs($vehicleId)
     {
+        Log::info('Fetching active DTC codes for vehicle', ['vehicle_id' => $vehicleId]);
         // Primero intentar obtener desde caché
         $cachedDtcCodes = Cache::get("vehicle_dtc_{$vehicleId}");
 
@@ -272,6 +273,7 @@ class DashboardController extends Controller
      */
     private function determineConnectionStatus($vehicleId)
     {
+        Log::info('Determining connection status for vehicle', ['vehicle_id' => $vehicleId]);
         // Usar tu estructura existente: buscar a través de vehicle_sensors
         $lastRegister = Register::whereHas('sensor', function ($query) use ($vehicleId) {
             $query->where('vehicle_id', $vehicleId);
@@ -431,6 +433,9 @@ class DashboardController extends Controller
      */
     private function structureAndClassifySensors($vehicleSensors, $readings)
     {
+        Log::info('Structuring and classifying sensors', [
+            'vehicle_sensor_count' => count($vehicleSensors),
+        ]);
         // Catálogo de PIDs fijos para el panel principal
         $pidsCatalog = [
             'rpm' => ['0x0C', '0xC'],
