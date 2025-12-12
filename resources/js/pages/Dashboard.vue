@@ -257,7 +257,7 @@ const lastUpdateFormatted = computed(() => {
 const cleanupWebSocketConnections = () => {
     if (!window.Echo) return;
 
-    // ⬇️ AGREGAR: Detener verificación periódica
+    // Detener verificación periódica
     stopConnectionCheck();
 
     activeChannels.value.forEach((channel) => {
@@ -287,7 +287,7 @@ const cleanupWebSocketConnections = () => {
     isConnected.value = false;
     isRealTimeActive.value = false;
 
-    // ⬇️ AGREGAR: Reset de timestamps
+    // Reset de timestamps
     lastDataReceivedAt.value = null;
     vehicleLoadedAt.value = null;
 };
@@ -344,54 +344,64 @@ const setupWebSocketConnection = () => {
     }
 };
 
-const handleTelemetryUpdate = (data: any) => {
+/**
+ * 🔥 FUNCIÓN CORREGIDA: Procesa datos de telemetría del backend
+ * El backend envía: { vehicle_id, device_id, timestamp, data: {...}, dtc_codes: [...] }
+ * donde "data" contiene TODOS los sensores con estructura:
+ * { "PID": { pid, raw_value, processed_value, unit, name, timestamp }, ... }
+ */
+const handleTelemetryUpdate = (payload: any) => {
     try {
-        if (data.vehicle_id !== currentVehicleId.value) {
+        if (payload.vehicle_id !== currentVehicleId.value) {
             return;
         }
 
-        // ⬇️ AGREGAR ESTA LÍNEA - Registrar momento de recepción de datos
+        console.log('📡 Telemetría recibida:', payload);
+
+        // Actualizar timestamp de última recepción
         lastDataReceivedAt.value = new Date();
-
-        // ... resto del código existente ...
-
         isRealTimeActive.value = true;
 
         if (realTimeTimeout.value) {
             clearTimeout(realTimeTimeout.value);
         }
 
-        // El resto del código sigue igual...
-        if (data.structured_sensors) {
-            if (data.structured_sensors.primary) {
-                primarySensorsData.value = data.structured_sensors.primary;
+        // OPCIÓN 1: Si el backend envía datos pre-estructurados (preferred)
+        if (payload.structured_sensors) {
+            if (payload.structured_sensors.primary) {
+                primarySensorsData.value = payload.structured_sensors.primary;
             }
-            if (data.structured_sensors.secondary) {
-                secondarySensorsData.value = data.structured_sensors.secondary;
+            if (payload.structured_sensors.secondary) {
+                secondarySensorsData.value = payload.structured_sensors.secondary;
             }
-            if (data.structured_sensors.gps) {
-                Object.keys(data.structured_sensors.gps).forEach((pid) => {
-                    gpsReadings.value[pid] = data.structured_sensors.gps[pid].value;
+            if (payload.structured_sensors.gps) {
+                Object.keys(payload.structured_sensors.gps).forEach((pid) => {
+                    gpsReadings.value[pid] = payload.structured_sensors.gps[pid].value;
                 });
                 nextTick(updateMapGpsData);
             }
-        } else if (data.data && typeof data.data === 'object') {
-            Object.keys(data.data).forEach((pid) => {
-                const sensorData = data.data[pid];
-                if (sensorData && typeof sensorData.processed_value === 'number') {
-                    sensorReadings.value[pid] = sensorData.processed_value;
-                    updatePrimarySensorFromOldFormat(pid, sensorData.processed_value);
-                }
-            });
+        }
+        // OPCIÓN 2: Si el backend envía "data" con todos los sensores mezclados
+        else if (payload.data && typeof payload.data === 'object') {
+            processTelemetryData(payload.data);
             nextTick(updateMapGpsData);
         }
 
-        if (data.dtc_codes && Array.isArray(data.dtc_codes)) {
-            dtcCodes.value = data.dtc_codes;
+        // Procesar códigos DTC
+        if (payload.dtc_codes && Array.isArray(payload.dtc_codes)) {
+            dtcCodes.value = payload.dtc_codes.map((dtc: any) => ({
+                id: dtc.id || 0,
+                code: dtc.code,
+                description: dtc.description,
+                severity: dtc.severity,
+                detected_at: payload.timestamp,
+                is_active: true,
+            }));
         }
 
         lastUpdate.value = new Date();
 
+        // Desactivar indicador de real-time después de 2 minutos sin datos
         realTimeTimeout.value = setTimeout(() => {
             isRealTimeActive.value = false;
         }, 120000);
@@ -400,6 +410,83 @@ const handleTelemetryUpdate = (data: any) => {
     }
 };
 
+/**
+ * 🔥 NUEVA FUNCIÓN: Procesa el objeto "data" del backend y separa sensores primarios/secundarios
+ * El backend envía: { "0x0C": {...}, "0x0D": {...}, ... }
+ */
+const processTelemetryData = (telemetryData: Record<string, any>) => {
+    // Definir PIDs de sensores primarios (ajusta según tus necesidades)
+    const primaryPIDsMap: Record<string, string> = {
+        '0x0C': 'rpm',
+        '0x0D': 'speed',
+        '0x05': 'temperature',
+        '0x42': 'battery',
+        '0x2F': 'fuelLevel',
+        '0x11': 'throttlePosition',
+        'GEAR': 'GEAR',
+    };
+
+    // PIDs de GPS
+    const gpsPIDs = ['lat', 'lng', 'alt_m', 'rumbo', 'vel_kmh'];
+
+    const primary: Record<string, any> = {};
+    const secondary: any[] = [];
+
+    Object.entries(telemetryData).forEach(([pid, sensorData]) => {
+        if (!sensorData || typeof sensorData !== 'object') return;
+
+        const processedValue = sensorData.processed_value ?? sensorData.value ?? 0;
+
+        // Actualizar sensorReadings para compatibilidad
+        sensorReadings.value[pid] = processedValue;
+
+        // Clasificar como GPS
+        if (gpsPIDs.includes(pid)) {
+            gpsReadings.value[pid] = processedValue;
+            return;
+        }
+
+        // Clasificar como primario
+        if (primaryPIDsMap[pid]) {
+            const key = primaryPIDsMap[pid];
+            primary[key] = {
+                pid: sensorData.pid || pid,
+                value: processedValue,
+                unit: sensorData.unit || '',
+                name: sensorData.name || key,
+                min_value: sensorData.min_value || 0,
+                max_value: sensorData.max_value || 100,
+                description: sensorData.description || '',
+            };
+        }
+        // Clasificar como secundario
+        else {
+            secondary.push({
+                pid: sensorData.pid || pid,
+                value: processedValue,
+                unit: sensorData.unit || '',
+                name: sensorData.name || pid,
+                min_value: sensorData.min_value || 0,
+                max_value: sensorData.max_value || 100,
+                description: sensorData.description || '',
+            });
+        }
+    });
+
+    // Actualizar las refs reactivas
+    primarySensorsData.value = { ...primarySensorsData.value, ...primary };
+    secondarySensorsData.value = secondary;
+
+    console.log('✅ Datos procesados:', {
+        primarios: Object.keys(primary).length,
+        secundarios: secondary.length,
+        gps: Object.keys(gpsReadings.value).length,
+    });
+};
+
+/**
+ * Función legacy para compatibilidad con formato antiguo
+ */
 const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
     const pidMapping: Record<string, string> = {
         '0x0C': 'rpm',
@@ -412,7 +499,7 @@ const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
         '0x0B': 'oilPressure',
         '0x11': 'throttlePosition',
         '0x2F': 'fuelLevel',
-        "GEAR": 'GEAR',
+        GEAR: 'GEAR',
     };
 
     const key = pidMapping[pid];
@@ -486,7 +573,7 @@ const fetchVehicleData = async (deviceId: number) => {
         sensorReadings.value = {};
         isRealTimeActive.value = false;
 
-        // ⬇️ AGREGAR: Reset de timestamps de conexión
+        // Reset de timestamps de conexión
         lastDataReceivedAt.value = null;
         vehicleLoadedAt.value = null;
 
@@ -511,7 +598,7 @@ const fetchVehicleData = async (deviceId: number) => {
                 }
             }
 
-            // ⬇️ AGREGAR: Marcar momento de carga e iniciar verificación
+            // Marcar momento de carga e iniciar verificación
             vehicleLoadedAt.value = new Date();
             startConnectionCheck();
 
@@ -560,7 +647,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     cleanupWebSocketConnections();
-    stopConnectionCheck(); // ⬇️ AGREGAR
+    stopConnectionCheck();
 
     if (realTimeTimeout.value) {
         clearTimeout(realTimeTimeout.value);
