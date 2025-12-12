@@ -45,48 +45,61 @@ class DashboardController extends Controller
      */
     public function getDeviceVehicleActive(Request $request, ClientDevice $clientDevice)
     {
-        $vehicle = $clientDevice->vehicles()->where('status', true)->first();
+        try {
 
-        if (!$vehicle) {
+            $vehicle = $clientDevice->vehicles()->where('status', true)->first();
+
+            if (!$vehicle) {
+                return response()->json([
+                    'message' => 'No active vehicle found for this device.',
+                ], 404);
+            }
+
+            // Cargar el vehículo con sus sensores
+            $vehicle->load([
+                'vehicleSensors' => function ($query) {
+                    $query->where('is_active', true);
+                },
+                'vehicleSensors.sensor'
+            ]);
+
+            // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
+            $latestReadings = $this->getLatestSensorReadings($vehicle->id);
+
+            // Determinar el estado de conexión basado en la última lectura
+            $connectionStatus = $this->determineConnectionStatus($vehicle->id);
+
+            // Obtener códigos DTC activos
+            $dtcCodes = $this->getActiveDTCs($vehicle->id);
+
+            // CLASIFICAR Y ESTRUCTURAR LOS SENSORES
+            $structuredSensors = $this->structureAndClassifySensors(
+                $vehicle->vehicleSensors,
+                $latestReadings['data']
+            );
+
+            Log::info('Vehicle data retrieved with latest readings', [
+                'vehicle_id' => $vehicle->id,
+            ]);
+
             return response()->json([
-                'message' => 'No active vehicle found for this device.',
-            ], 404);
+                'vehicle' => $vehicle,
+                'latest_readings' => $latestReadings,
+                'structured_sensors' => $structuredSensors, // CLAVE: Datos pre-estructurados
+                'connection_status' => $connectionStatus,
+                'dtc_codes' => $dtcCodes
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving vehicle data', [
+                'device_id' => $clientDevice->id,
+                'error' => $e->getMessage(),
+                'file' => basename($e->getFile()) . ':' . $e->getLine(),
+            ]);
+
+            return response()->json([
+                'message' => 'Internal server error',
+            ], 500);
         }
-
-        // Cargar el vehículo con sus sensores
-        $vehicle->load([
-            'vehicleSensors' => function ($query) {
-                $query->where('is_active', true);
-            },
-            'vehicleSensors.sensor'
-        ]);
-
-        // Obtener las últimas lecturas de cada sensor (los valores ya están procesados/calculados)
-        $latestReadings = $this->getLatestSensorReadings($vehicle->id);
-
-        // Determinar el estado de conexión basado en la última lectura
-        $connectionStatus = $this->determineConnectionStatus($vehicle->id);
-
-        // Obtener códigos DTC activos
-        $dtcCodes = $this->getActiveDTCs($vehicle->id);
-
-        // CLASIFICAR Y ESTRUCTURAR LOS SENSORES
-        $structuredSensors = $this->structureAndClassifySensors(
-            $vehicle->vehicleSensors,
-            $latestReadings['data']
-        );
-
-        Log::info('Vehicle data retrieved with latest readings', [
-            'vehicle_id' => $vehicle->id,
-        ]);
-
-        return response()->json([
-            'vehicle' => $vehicle,
-            'latest_readings' => $latestReadings,
-            'structured_sensors' => $structuredSensors, // CLAVE: Datos pre-estructurados
-            'connection_status' => $connectionStatus,
-            'dtc_codes' => $dtcCodes
-        ]);
     }
 
     /**
