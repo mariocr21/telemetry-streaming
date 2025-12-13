@@ -490,8 +490,8 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
 const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
     const pidMapping: Record<string, string> = {
         '0x0C': 'rpm',
+        'vel_kmh': 'speed',
         '0x0D': 'speed',
-        vel_kmh: 'speed',
         '0x05': 'temperature',
         '0x42': 'battery',
         BAT: 'battery',
