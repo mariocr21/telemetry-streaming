@@ -418,12 +418,12 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
     // Definir PIDs de sensores primarios (ajusta según tus necesidades)
     const primaryPIDsMap: Record<string, string> = {
         '0x0C': 'rpm',
-        'vel_kmh': 'vel_kmh', // Soporte para PID alternativo
+        vel_kmh: 'vel_kmh', // Soporte para PID alternativo
         '0x05': 'temperature',
         '0x42': 'battery',
         '0x2F': 'fuelLevel',
         '0x11': 'throttlePosition',
-        'GEAR': 'GEAR',
+        GEAR: 'GEAR',
     };
 
     // PIDs de GPS
@@ -455,7 +455,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
                 unit: sensorData.unit || '',
                 name: sensorData.name || key,
                 min_value: sensorData.min_value || 0,
-                max_value: sensorData.max_value || 200,
+                max_value: sensorData.max_value || (pid === 'vel_kmh' ? 200 : 100),
                 description: sensorData.description || '',
             };
         }
