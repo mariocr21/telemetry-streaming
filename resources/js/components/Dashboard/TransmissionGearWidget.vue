@@ -42,11 +42,11 @@ const props = defineProps<{
 
 // Mapeo de valores decimales a posiciones de marcha
 const GEAR_POSITIONS = {
-    46: { code: 'P', label: 'PARKING', color: '#ef4444' },     // Rojo
-    47: { code: 'R', label: 'REVERSE', color: '#f59e0b' },     // Naranja
-    32: { code: 'N', label: 'NEUTRAL', color: '#06b6d4' },     // Cyan
-    33: { code: 'L', label: 'LOW', color: '#10b981' },         // Verde
-    34: { code: 'H', label: 'HIGH', color: '#8b5cf6' },        // Violeta
+    126: { code: 'P', label: 'PARKING', color: '#ef4444' },     // Rojo
+    127: { code: 'R', label: 'REVERSE', color: '#f59e0b' },     // Naranja
+    112: { code: 'N', label: 'NEUTRAL', color: '#06b6d4' },     // Cyan
+    113: { code: 'L', label: 'LOW', color: '#10b981' },         // Verde
+    114: { code: 'H', label: 'HIGH', color: '#8b5cf6' },        // Violeta
 } as const
 
 type GearValue = keyof typeof GEAR_POSITIONS

@@ -43,13 +43,26 @@ const props = defineProps<{
     normalTemp?: number
 }>()
 
-// Valores por defecto para temperatura del refrigerante (°C)
+// Valores por defecto para temperatura del refrigerante (°F)
 const minTemp = props.minTemp ?? 0
-const maxTemp = props.maxTemp ?? 120
-const normalTemp = props.normalTemp ?? 90
+const maxTemp = props.maxTemp ?? 250
+const normalTemp = props.normalTemp ?? 190
 
-// Estado animado
+// Estado animado (siempre almacena el valor en Fahrenheit)
 const currentTemp = ref(0)
+
+// Estado para cambiar entre C y F
+const isFahrenheit = ref(true) // true porque los datos vienen en F
+
+// Función para convertir Fahrenheit a Celsius
+const fahrenheitToCelsius = (f: number): number => {
+    return (f - 32) * 5 / 9
+}
+
+// Función para cambiar entre C y F
+const toggleUnit = () => {
+    isFahrenheit.value = !isFahrenheit.value
+}
 
 // Función para calcular porcentaje
 const tempPercentage = computed(() => {
@@ -57,13 +70,12 @@ const tempPercentage = computed(() => {
     return Math.max(0, Math.min(100, percentage))
 })
 
-// Función para obtener color basado en temperatura
+// Función para obtener color basado en temperatura (en Fahrenheit)
 const getTempColor = (temp: number): string => {
-    if (temp < 60) return '#06b6d4' // cyan - frío
-    if (temp < 80) return '#10b981' // verde - calentando
-    if (temp < 95) return '#f59e0b' // amarillo - normal
-    if (temp < 105) return '#f97316' // naranja - caliente
-    return '#ef4444' // rojo - sobrecalentamiento
+    if (temp < 100) return '#06b6d4' // cyan - frío
+    if (temp < 220) return '#10b981' // verde - normal (160-219)
+    if (temp < 230) return '#f97316' // naranja - caliente (220-229)
+    return '#ef4444' // rojo - crítico (230+)
 }
 
 const tempColor = computed(() => getTempColor(currentTemp.value))
@@ -114,14 +126,31 @@ onMounted(() => {
     currentTemp.value = 0
 })
 
-const displayTemp = computed(() => Math.round(currentTemp.value))
+// Valor mostrado con conversión si es necesario
+const displayTemp = computed(() => {
+    const temp = isFahrenheit.value 
+        ? currentTemp.value 
+        : fahrenheitToCelsius(currentTemp.value)
+    return Math.round(temp)
+})
 </script>
 
 <template>
     <div class="w-full h-full relative">
-        <!-- PID en esquina superior derecha -->
-        <div class="absolute top-0 right-0 text-xs text-slate-500">
-            {{ sensor.sensor.sensor.pid }}
+        <!-- PID y botón toggle en esquina superior derecha -->
+        <div class="absolute top-0 right-0 flex items-center gap-2">
+            <div class="text-xs text-slate-500">
+                {{ sensor.sensor.sensor.pid }}
+            </div>
+            <button 
+                @click="toggleUnit"
+                class="px-2 py-1 text-xs font-semibold rounded transition-colors duration-200"
+                :class="isFahrenheit 
+                    ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' 
+                    : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'"
+            >
+                {{ isFahrenheit ? '°F' : '°C' }}
+            </button>
         </div>
         
         <!-- Título en esquina superior izquierda -->
@@ -134,13 +163,13 @@ const displayTemp = computed(() => Math.round(currentTemp.value))
             <span 
                 class="text-xs px-2 py-1 rounded-full"
                 :class="{
-                    'bg-cyan-500/20 text-cyan-400': currentTemp < 60,
-                    'bg-green-500/20 text-green-400': currentTemp >= 60 && currentTemp < 95,
-                    'bg-yellow-500/20 text-yellow-400': currentTemp >= 95 && currentTemp < 105,
-                    'bg-red-500/20 text-red-400': currentTemp >= 105
+                    'bg-cyan-500/20 text-cyan-400': currentTemp < 100,
+                    'bg-green-500/20 text-green-400': currentTemp >= 100 && currentTemp < 220,
+                    'bg-yellow-500/20 text-yellow-400': currentTemp >= 220 && currentTemp < 230,
+                    'bg-red-500/20 text-red-400': currentTemp >= 230
                 }"
             >
-                {{ currentTemp < 60 ? 'FRÍO' : currentTemp < 95 ? 'NORMAL' : currentTemp < 105 ? 'CALIENTE' : 'CRÍTICO' }}
+                {{ currentTemp < 100 ? 'FRÍO' : currentTemp < 220 ? 'NORMAL' : currentTemp < 230 ? 'CALIENTE' : 'CRÍTICO' }}
             </span>
         </div>
         
@@ -169,14 +198,14 @@ const displayTemp = computed(() => Math.round(currentTemp.value))
                 <!-- Valor principal -->
                 <div class="text-center">
                     <div class="text-3xl font-bold text-white">{{ displayTemp }}</div>
-                    <div class="text-sm text-slate-400">{{ sensor.sensor.sensor.unit }}</div>
+                    <div class="text-sm text-slate-400">{{ isFahrenheit ? '°F' : '°C' }}</div>
                 </div>
                 
-                <!-- Escala compacta -->
+                <!-- Escala compacta con conversión -->
                 <div class="relative h-20 flex flex-col justify-between text-xs text-slate-400">
-                    <span>{{ maxTemp }}°</span>
-                    <span class="text-yellow-400 text-center">{{ normalTemp }}°</span>
-                    <span>{{ minTemp }}°</span>
+                    <span>{{ isFahrenheit ? maxTemp : Math.round(fahrenheitToCelsius(maxTemp)) }}°</span>
+                    <span class="text-green-400 text-center">{{ isFahrenheit ? normalTemp : Math.round(fahrenheitToCelsius(normalTemp)) }}°</span>
+                    <span>{{ isFahrenheit ? minTemp : Math.round(fahrenheitToCelsius(minTemp)) }}°</span>
                 </div>
             </div>
         </div>
