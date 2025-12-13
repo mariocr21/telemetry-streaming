@@ -130,7 +130,7 @@ const createWidgetData = (data: any, key: string, emoji?: string) => {
 // --- COMPUTED PROPERTIES PARA WIDGETS ---
 
 const rpmWidgetData = computed(() => createWidgetData(primarySensorsData.value.rpm, 'rpm'));
-const speedWidgetData = computed(() => createWidgetData(primarySensorsData.value.speed, 'speed'));
+const speedWidgetData = computed(() => createWidgetData(primarySensorsData.value.vel_kmh, 'vel_kmh'));
 const tempWidgetData = computed(() => createWidgetData(primarySensorsData.value.temperature, 'temperature', '🌡️'));
 const batteryWidgetData = computed(() => createWidgetData(primarySensorsData.value.battery, 'battery', '🔋'));
 const fuelWidgetData = computed(() => createWidgetData(primarySensorsData.value.fuelLevel, 'fuelLevel', '⛽'));
@@ -418,7 +418,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
     // Definir PIDs de sensores primarios (ajusta según tus necesidades)
     const primaryPIDsMap: Record<string, string> = {
         '0x0C': 'rpm',
-        'vel_kmh': 'speed',
+        'vel_kmh': 'vel_kmh',
         '0x05': 'temperature',
         '0x42': 'battery',
         '0x2F': 'fuelLevel',
@@ -490,8 +490,8 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
 const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
     const pidMapping: Record<string, string> = {
         '0x0C': 'rpm',
-        'vel_kmh': 'speed',
-        '0x0D': 'speed',
+        'vel_kmh': 'vel_kmh',
+        '0x0D': 'vel_kmh',
         '0x05': 'temperature',
         '0x42': 'battery',
         BAT: 'battery',
