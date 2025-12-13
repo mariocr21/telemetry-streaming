@@ -5,6 +5,7 @@ import axios from 'axios';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 // --- Importaciones de Componentes y Hooks ---
+import BatteryWidget from '@/components/Dashboard/BatteryWidget.vue';
 import MapWidget from '@/components/Dashboard/MapWidget.vue';
 import SpeedometerWidget from '@/components/Dashboard/SpeedometerWidget.vue';
 import TachometerWidget from '@/components/Dashboard/TachometerWidget.vue';
@@ -14,7 +15,6 @@ import TransmissionGearWidget from '@/components/Dashboard/TransmissionGearWidge
 import DashboardHeader from '@/components/DashboardHeader.vue';
 import DeviceSelectModal from '@/components/DeviceSelectModal.vue';
 import DtcWidget from '@/components/Dtcwidget.vue';
-import BatteryWidget from '@/components/Dashboard/BatteryWidget.vue';
 import { useI18n } from '@/i18n/useI18n';
 
 const { t } = useI18n();
@@ -418,7 +418,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
     // Definir PIDs de sensores primarios (ajusta según tus necesidades)
     const primaryPIDsMap: Record<string, string> = {
         '0x0C': 'rpm',
-        'vel_kmh': 'vel_kmh',
+        'vel_kmh': 'vel_kmh', // Soporte para PID alternativo
         '0x05': 'temperature',
         '0x42': 'battery',
         '0x2F': 'fuelLevel',
@@ -455,7 +455,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
                 unit: sensorData.unit || '',
                 name: sensorData.name || key,
                 min_value: sensorData.min_value || 0,
-                max_value: sensorData.max_value || 100,
+                max_value: sensorData.max_value || 200,
                 description: sensorData.description || '',
             };
         }
@@ -490,7 +490,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
 const updatePrimarySensorFromOldFormat = (pid: string, value: number) => {
     const pidMapping: Record<string, string> = {
         '0x0C': 'rpm',
-        'vel_kmh': 'vel_kmh',
+        vel_kmh: 'vel_kmh',
         '0x0D': 'vel_kmh',
         '0x05': 'temperature',
         '0x42': 'battery',
@@ -765,7 +765,7 @@ onUnmounted(() => {
                                 <span class="sensor-name">{{ sensorData?.title }}</span>
                                 <span class="sensor-value">
                                     <!-- validar si es string o number -->
-                                    {{ typeof sensorData?.value === 'number' ? sensorData.value.toFixed(2) : sensorData?.value ?? 'N/A' }}
+                                    {{ typeof sensorData?.value === 'number' ? sensorData.value.toFixed(2) : (sensorData?.value ?? 'N/A') }}
                                     <span class="sensor-unit">{{ sensorData?.sensor?.sensor?.unit }}</span>
                                 </span>
                             </div>
