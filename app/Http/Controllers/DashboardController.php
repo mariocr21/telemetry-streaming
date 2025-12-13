@@ -452,7 +452,7 @@ class DashboardController extends Controller
         // Catálogo de PIDs fijos para el panel principal
         $pidsCatalog = [
             'rpm' => ['0x0C', '0xC'],
-            'speed' => ['0x0D', 'D', 'vel_kmh'],
+            'speed' => ['vel_kmh', '0x0D', 'D'],
             'temperature' => ['0x05'],
             'battery' => ['0x42', 'BAT', 'volt'],
             'oilPressure' => ['0x0B', 'oil_press'],
