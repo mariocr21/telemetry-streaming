@@ -427,7 +427,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
     };
 
     // ✅ GPS sin vel_kmh (o si quieres vel_kmh aquí, NO uses return)
-    const gpsPIDs = ['lat', 'lng', 'alt_m', 'rumbo', 'vel_kmh'];
+    const gpsPIDs = ['lat', 'lng', 'alt_m', 'rumbo'];
 
     const primary: Record<string, any> = {};
     const secondary: any[] = [];
