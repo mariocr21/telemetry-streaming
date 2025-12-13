@@ -27,5 +27,5 @@ export const en = {
     errorLoadingVehicleData: 'Error loading vehicle data.',
     connectionStatusWarning: 'Warning',
     connectionStatusWaiting: 'Waiting',
-    transmissionGearTitle: 'Transmission Gear',
+    transmissionGearTitle: 'GEAR',
 };
