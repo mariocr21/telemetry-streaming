@@ -415,10 +415,10 @@ const handleTelemetryUpdate = (payload: any) => {
  * El backend envía: { "0x0C": {...}, "0x0D": {...}, ... }
  */
 const processTelemetryData = (telemetryData: Record<string, any>) => {
-    // Definir PIDs de sensores primarios (ajusta según tus necesidades)
     const primaryPIDsMap: Record<string, string> = {
         '0x0C': 'rpm',
-        vel_kmh: 'vel_kmh', // Soporte para PID alternativo
+        '0x0D': 'vel_kmh', // ✅ velocidad OBD
+        vel_kmh: 'vel_kmh', // ✅ velocidad GPS si llega así
         '0x05': 'temperature',
         '0x42': 'battery',
         '0x2F': 'fuelLevel',
@@ -426,8 +426,8 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
         GEAR: 'GEAR',
     };
 
-    // PIDs de GPS
-    const gpsPIDs = ['lat', 'lng', 'alt_m', 'rumbo', 'vel_kmh'];
+    // ✅ GPS sin vel_kmh (o si quieres vel_kmh aquí, NO uses return)
+    const gpsPIDs = ['lat', 'lng', 'alt_m', 'rumbo'];
 
     const primary: Record<string, any> = {};
     const secondary: any[] = [];
@@ -437,16 +437,13 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
 
         const processedValue = sensorData.processed_value ?? sensorData.value ?? 0;
 
-        // Actualizar sensorReadings para compatibilidad
         sensorReadings.value[pid] = processedValue;
 
-        // Clasificar como GPS
         if (gpsPIDs.includes(pid)) {
             gpsReadings.value[pid] = processedValue;
             return;
         }
 
-        // Clasificar como primario
         if (primaryPIDsMap[pid]) {
             const key = primaryPIDsMap[pid];
             primary[key] = {
@@ -455,12 +452,10 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
                 unit: sensorData.unit || '',
                 name: sensorData.name || key,
                 min_value: sensorData.min_value || 0,
-                max_value: sensorData.max_value || (pid === 'vel_kmh' ? 200 : 100),
+                max_value: sensorData.max_value || (key === 'vel_kmh' ? 200 : 100),
                 description: sensorData.description || '',
             };
-        }
-        // Clasificar como secundario
-        else {
+        } else {
             secondary.push({
                 pid: sensorData.pid || pid,
                 value: processedValue,
@@ -473,17 +468,9 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
         }
     });
 
-    // Actualizar las refs reactivas
     primarySensorsData.value = { ...primarySensorsData.value, ...primary };
     secondarySensorsData.value = secondary;
-
-    console.log('✅ Datos procesados:', {
-        primarios: Object.keys(primary).length,
-        secundarios: secondary.length,
-        gps: Object.keys(gpsReadings.value).length,
-    });
 };
-
 /**
  * Función legacy para compatibilidad con formato antiguo
  */
