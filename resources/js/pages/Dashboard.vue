@@ -418,7 +418,7 @@ const processTelemetryData = (telemetryData: Record<string, any>) => {
     // Definir PIDs de sensores primarios (ajusta según tus necesidades)
     const primaryPIDsMap: Record<string, string> = {
         '0x0C': 'rpm',
-        '0x0D': 'speed',
+        'vel_kmh': 'speed',
         '0x05': 'temperature',
         '0x42': 'battery',
         '0x2F': 'fuelLevel',
