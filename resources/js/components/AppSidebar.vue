@@ -5,7 +5,20 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Cpu, FileText, LayoutGrid, Users } from 'lucide-vue-next';
+import { 
+    Activity,
+    Car,
+    Cpu, 
+    FileText, 
+    LayoutDashboard, 
+    LayoutGrid, 
+    Play,
+    Settings2,
+    Smartphone,
+    Users,
+    User,
+    Package2,
+} from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -14,88 +27,116 @@ const page = usePage();
 // Type assertion for page.props.auth
 interface AuthUser {
     client_id: number | null;
-    // add other user properties if needed
+    role: string;
 }
 interface PageProps {
     auth: {
         user?: AuthUser;
-        // add other auth properties if needed
     };
-    // add other props if needed
 }
 
-const isClient = computed(() => {
-    const user = (page.props as unknown as PageProps).auth.user;
-    return user?.client_id !== null && user?.client_id !== undefined;
-});
+const authUser = computed(() => (page.props as unknown as PageProps).auth.user);
+const isClient = computed(() => authUser.value?.client_id !== null && authUser.value?.client_id !== undefined);
+const isSuperAdmin = computed(() => authUser.value?.role === 'SA');
+const clientId = computed(() => authUser.value?.client_id);
 
-const clientId = computed(() => (page.props as unknown as PageProps).auth.user?.client_id);
-
-// Hacer allNavItems computed para que la URL sea dinámica
+// Navigation items organized by role and function
 const allNavItems = computed(() => [
+    // === MAIN DASHBOARD ITEMS ===
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
+        title: 'Mis Dashboards',
+        href: '/dashboard-config',
+        icon: LayoutDashboard,
         hasPermission: true,
         allowedForClients: true,
+        isForSuperAdmin: true,
     },
     {
-        title: 'inventario de dispositivos',
-        href: '/device-inventory',
-        icon: Cpu,
+        title: 'Telemetría en Vivo',
+        href: '/dashboard-dynamic',
+        icon: Activity,
         hasPermission: true,
-        allowedForClients: false,
-    },
-    {
-        title: 'Clients',
-        href: '/clients',
-        icon: Users,
-        hasPermission: true,
-        allowedForClients: false,
+        allowedForClients: true,
+        isForSuperAdmin: true,
     },
     {
         title: 'Replays',
         href: '/replays',
-        icon: Users,
+        icon: Play,
         hasPermission: true,
-        allowedForClients: false,
+        allowedForClients: true,
+        isForSuperAdmin: true,
     },
     {
-        title: 'Logs',
+        title: 'Catálogo de Clientes',
+        href: '/admin/clients',
+        icon: Users,
+        hasPermission: true,
+        allowedForClients: false, // SA only
+        isForSuperAdmin: true,
+    },
+    {
+        title: 'Inventario de Dispositivos',
+        href: '/device-inventory',
+        icon: Package2,
+        hasPermission: true,
+        allowedForClients: false, // SA only
+        isForSuperAdmin: true,
+    },
+    {
+        title: 'Catálogo de Sensores',
+        href: '/admin/sensors',
+        icon: Cpu,
+        hasPermission: true,
+        allowedForClients: false, // SA only
+        isForSuperAdmin: true,
+    },
+    {
+        title: 'Catálogo de Vehículos',
+        href: '/admin/vehicles',
+        icon: Car,
+        hasPermission: true,
+        allowedForClients: false, // SA only
+        isForSuperAdmin: true,
+    },
+    {
+        title: 'Logs del Sistema',
         href: '/log-monitor',
         icon: FileText,
         hasPermission: true,
-        allowedForClients: false,
+        allowedForClients: false, // SA only
+        isForSuperAdmin: true,
     },
+    // === CLIENT ITEMS (dynamically added) ===
     ...(isClient.value
         ? [
               {
-                  title: 'My devices',
+                  title: 'Mis Dispositivos',
                   href: `/clients/${clientId.value}/devices`,
-                  icon: Cpu,
+                  icon: Smartphone,
                   hasPermission: true,
                   allowedForClients: true,
+                  isForSuperAdmin: false,
               },
               {
-                  title: 'My profile',
+                  title: 'Mi Perfil',
                   href: `/clients/${clientId.value}`,
-                  icon: Users,
+                  icon: User,
                   hasPermission: true,
                   allowedForClients: true,
+                  isForSuperAdmin: false,
               },
           ]
         : []),
 ]);
 
-// Filtrar items según si es cliente o no
+// Filter items based on user role
 const mainNavItems = computed(() => {
     if (isClient.value) {
-        // Si es cliente, solo mostrar items permitidos para clientes
         return allNavItems.value.filter((item) => item.allowedForClients);
     }
-    // Si no es cliente, mostrar todos (ya excluimos My devices con el spread condicional)
-    return allNavItems.value.filter((item) => item.allowedForClients === false);
+    // Super Admin - show all except client-specific profile items
+    return allNavItems.value.filter((item) => item.isForSuperAdmin);
 });
 
 const footerNavItems: NavItem[] = [];

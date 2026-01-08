@@ -11,7 +11,7 @@ class Vehicle extends Model
 {
     /** @use HasFactory<\Database\Factories\VehicleFactory> */
     use HasFactory, SoftDeletes;
-    
+
     protected $fillable = [
         'client_id',
         'client_device_id',
@@ -61,6 +61,19 @@ class Vehicle extends Model
     public function vehicleSensors()
     {
         return $this->hasMany(VehicleSensor::class);
+    }
+
+    public function dashboardLayouts()
+    {
+        return $this->hasMany(DashboardLayout::class);
+    }
+
+    /**
+     * Get the active dashboard layout for this vehicle
+     */
+    public function getActiveLayoutAttribute()
+    {
+        return $this->dashboardLayouts()->where('is_active', true)->first();
     }
 
     // Scopes útiles

@@ -10,10 +10,11 @@ export function createReverbConnection() {
     const config = {
         broadcaster: 'reverb',
         key: import.meta.env.VITE_REVERB_APP_KEY || 'app-key',
-        wsHost: import.meta.env.VITE_REVERB_HOST || 'ws.neurona.xyz',
-        wsPort: import.meta.env.VITE_REVERB_PORT || 443,
-        wssPort: import.meta.env.VITE_REVERB_PORT || 443,
-        forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
+        wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
+        wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+        wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME === 'https'),
+        disableStats: true,
         enabledTransports: ['ws', 'wss'],
     };
 
@@ -38,7 +39,7 @@ export function testReverbConnection(echo) {
 
         // Intentar suscribirse a un canal de prueba
         const channel = echo.channel('test-connection');
-        
+
         channel.listen('.test-event', () => {
             clearTimeout(timeout);
             echo.leave('test-connection');

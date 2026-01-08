@@ -7,9 +7,13 @@ interface Device {
     device_name: string;
     status: string;
     active_vehicle: {
+        id: number;
         vin: string | null;
         make?: string | null;
         model?: string | null;
+        year?: number | null;
+        nickname?: string | null;
+        license_plate?: string | null;
     } | null;
 }
 
@@ -56,6 +60,27 @@ const getStatusDotClass = (): string => {
 const isLive = (): boolean => {
     return props.displayConnectionStatus?.icon === 'live';
 };
+
+// Función para obtener el nombre legible del vehículo
+const getVehicleDisplayName = (): string => {
+    const vehicle = props.selectedDevice?.active_vehicle;
+    if (!vehicle) return t('noneSelected') || 'Sin vehículo';
+    
+    // Prioridad: nickname > make+model+year > license_plate > VIN
+    if (vehicle.nickname) return vehicle.nickname;
+    
+    const parts = [
+        vehicle.make,
+        vehicle.model,
+        vehicle.year ? `(${vehicle.year})` : null
+    ].filter(Boolean);
+    
+    if (parts.length > 0) return parts.join(' ');
+    if (vehicle.license_plate) return vehicle.license_plate;
+    if (vehicle.vin) return vehicle.vin;
+    
+    return 'Vehículo';
+};
 </script>
 
 <template>
@@ -63,22 +88,22 @@ const isLive = (): boolean => {
         class="header-container"
         :class="{ 'header-live': isLive() }"
     >
-        <!-- Info del dispositivo -->
+        <!-- Info del vehículo/dispositivo -->
         <div class="device-info">
-            <p class="device-name">
-                {{ t('deviceLabel') }}
-                <span class="device-name-value">
-                    {{ selectedDevice?.device_name || t('noneSelected') }}
+            <!-- Nombre del vehículo primero (más prominente) -->
+            <p class="vehicle-name">
+                <span class="vehicle-name-value">
+                    {{ getVehicleDisplayName() }}
+                </span>
+                <span v-if="selectedDevice?.active_vehicle?.license_plate" class="vehicle-plate">
+                    {{ selectedDevice.active_vehicle.license_plate }}
                 </span>
             </p>
-            <p class="vehicle-info">
-                {{ t('activeVehicleLabel') }}
-                <span class="vehicle-vin">
-                    {{ selectedDevice?.active_vehicle?.vin || t('none') }}
-                </span>
-                <!-- Mostrar marca/modelo si está disponible -->
-                <span v-if="selectedDevice?.active_vehicle?.make" class="vehicle-details">
-                    · {{ selectedDevice.active_vehicle.make }} {{ selectedDevice.active_vehicle.model || '' }}
+            <!-- Dispositivo secundario -->
+            <p class="device-subtitle">
+                {{ t('deviceLabel') }}
+                <span class="device-name-text">
+                    {{ selectedDevice?.device_name || t('noneSelected') }}
                 </span>
             </p>
         </div>
@@ -188,28 +213,40 @@ const isLive = (): boolean => {
     }
 }
 
-.device-name {
-    font-size: 12px;
+/* Nombre del vehículo (principal) */
+.vehicle-name {
+    font-size: 14px;
     font-weight: 700;
-    color: rgb(34, 211, 238);
+    display: flex;
+    align-items: center;
+    gap: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 @media (min-width: 640px) {
-    .device-name {
-        font-size: 14px;
+    .vehicle-name {
+        font-size: 16px;
     }
 }
 
-.device-name-value {
-    margin-left: 4px;
-    font-weight: 400;
+.vehicle-name-value {
     color: rgb(229, 231, 235);
 }
 
-.vehicle-info {
+.vehicle-plate {
+    padding: 2px 8px;
+    background: rgba(6, 182, 212, 0.2);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgb(34, 211, 238);
+}
+
+/* Subtítulo del dispositivo */
+.device-subtitle {
     margin-top: 2px;
     font-size: 11px;
     color: rgb(156, 163, 175);
@@ -219,15 +256,16 @@ const isLive = (): boolean => {
 }
 
 @media (min-width: 640px) {
-    .vehicle-info {
+    .device-subtitle {
         font-size: 12px;
         margin-top: 4px;
     }
 }
 
-.vehicle-vin {
+.device-name-text {
     margin-left: 4px;
-    font-weight: 300;
+    font-weight: 400;
+    color: rgb(34, 211, 238);
 }
 
 .vehicle-details {

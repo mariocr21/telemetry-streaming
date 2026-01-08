@@ -1,0 +1,942 @@
+/* ===================================================================
+   NEURONA OFF ROAD TELEMETRY - CYBERPUNK INDUSTRIAL DASHBOARD
+   Version: 3.0 Pro - Tactical Racing Interface
+   Designed for: Rugged tablets in Baja 1000 / Dakar racing vehicles
+   =================================================================== */
+
+/* === CORE DESIGN TOKENS === */
+:root {
+    /* ─── Primary Racing Colors ─── */
+    --racing-red: #ff003c;
+    --racing-red-glow: rgba(255, 0, 60, 0.4);
+    --racing-orange: #ff8a00;
+    --racing-orange-glow: rgba(255, 138, 0, 0.4);
+    --racing-cyan: #00f0ff;
+    --racing-cyan-glow: rgba(0, 240, 255, 0.4);
+    --racing-green: #00ff9d;
+    --racing-green-glow: rgba(0, 255, 157, 0.4);
+    --racing-yellow: #ffee00;
+    --racing-yellow-glow: rgba(255, 238, 0, 0.4);
+    --racing-purple: #cc00ff;
+    --racing-purple-glow: rgba(204, 0, 255, 0.4);
+
+    /* ─── Status Colors ─── */
+    --status-normal: var(--racing-green);
+    --status-warning: var(--racing-orange);
+    --status-critical: var(--racing-red);
+    --status-offline: #64748b;
+
+    /* ─── Dark Industrial Backgrounds ─── */
+    --bg-primary: #050505;
+    --bg-secondary: #0a0c10;
+    --bg-tertiary: #0d1117;
+    --bg-card: rgba(10, 12, 15, 0.85);
+    --bg-card-solid: #0f1218;
+    --bg-card-hover: #151a22;
+    --bg-glass: rgba(16, 20, 28, 0.9);
+    --bg-glass-light: rgba(255, 255, 255, 0.03);
+    --bg-overlay: rgba(0, 0, 0, 0.85);
+
+    /* ─── Typography ─── */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --text-muted: #64748b;
+    --text-dim: rgba(255, 255, 255, 0.4);
+
+    /* ─── Borders & Surfaces ─── */
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --border-default: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.12);
+    --border-accent: rgba(0, 240, 255, 0.3);
+
+    /* ─── Glow Effects ─── */
+    --glow-cyan: 0 0 25px var(--racing-cyan-glow);
+    --glow-cyan-intense: 0 0 40px var(--racing-cyan-glow), 0 0 60px rgba(0, 240, 255, 0.2);
+    --glow-red: 0 0 25px var(--racing-red-glow);
+    --glow-red-intense: 0 0 40px var(--racing-red-glow), 0 0 60px rgba(255, 0, 60, 0.2);
+    --glow-green: 0 0 25px var(--racing-green-glow);
+    --glow-orange: 0 0 25px var(--racing-orange-glow);
+    --glow-purple: 0 0 25px var(--racing-purple-glow);
+    --glow-yellow: 0 0 25px var(--racing-yellow-glow);
+
+    /* ─── Shadows ─── */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.05);
+
+    /* ─── Transitions ─── */
+    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-fast: 150ms var(--ease-out-expo);
+    --transition-normal: 300ms var(--ease-out-expo);
+    --transition-slow: 500ms var(--ease-out-expo);
+
+    /* ─── Layout ─── */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+}
+
+/* ===== DASHBOARD CONTAINER ===== */
+.dashboard-pro {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #0f1419 100%);
+    padding: 1.5rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ===== GPS SECTION ===== */
+.gps-section-pro {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.gps-section-pro::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--racing-cyan), var(--racing-purple));
+}
+
+.gps-header-pro {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.live-badge-pro {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 255, 136, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    border: 1px solid var(--racing-green);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--racing-green);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.live-dot-pro {
+    width: 8px;
+    height: 8px;
+    background: var(--racing-green);
+    border-radius: 50%;
+    animation: pulse-glow 2s ease-in-out infinite;
+    box-shadow: var(--glow-green);
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+}
+
+.gps-coords-pro {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: var(--racing-cyan);
+    font-weight: 500;
+}
+
+.gps-info-pro {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.gps-info-pro span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.gps-info-pro span span {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+/* ===== GAUGES GRID ===== */
+.gauges-grid-pro {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Specific spans for dashboard flow */
+.span-2 {
+    grid-column: span 2;
+}
+
+.span-full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+    .gauges-grid-pro {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .span-2,
+    .span-full {
+        grid-column: span 2;
+    }
+
+    .hide-mobile {
+        display: none;
+    }
+}
+
+/* ===== GAUGE CARD BASE ===== */
+.gauge-card-pro {
+    background: var(--bg-card);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
+}
+
+/* Widget Group Style (The container for multiple small items) */
+.widget-group-pro {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    grid-column: span 2;
+}
+
+.group-header-pro {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.group-content-pro {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .group-content-pro {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.gauge-card-pro:hover {
+    transform: translateY(-5px);
+    border-color: var(--racing-cyan);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 240, 255, 0.1);
+}
+
+.gauge-title-pro {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* ===== CIRCULAR GAUGE (Compact) ===== */
+.gauge-circular {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+
+.gauge-arc-bg-pro {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 8px solid rgba(255, 255, 255, 0.05);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    transform: rotate(-135deg);
+}
+
+.gauge-arc-fill-pro {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 8px solid transparent;
+    border-top-color: var(--racing-red);
+    border-right-color: var(--racing-red);
+    transform: rotate(-135deg);
+    transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+    filter: drop-shadow(var(--glow-red));
+}
+
+.gauge-arc-fill-pro.speed {
+    border-top-color: var(--racing-cyan);
+    border-right-color: var(--racing-cyan);
+    filter: drop-shadow(var(--glow-cyan));
+}
+
+.gauge-value-large-pro {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.gauge-unit-pro {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ===== TEMPERATURE DISPLAY ===== */
+.temp-display-pro {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
+.temp-bar-pro {
+    width: 40px;
+    height: 160px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.temp-indicator-pro {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, var(--racing-cyan), var(--racing-orange), var(--racing-red));
+    border-radius: 20px;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+}
+
+.temp-value-pro {
+    text-align: center;
+}
+
+.temp-number-pro {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.temp-status-pro {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--racing-green);
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ===== GEAR DISPLAY ===== */
+.gear-display-pro {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.gear-value-pro {
+    font-size: 6rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1;
+    text-shadow: 0 0 30px var(--racing-cyan);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.gear-label-pro {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* ===== BATTERY DISPLAY ===== */
+.battery-display-pro {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.battery-ring-pro {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 235, 59, 0.2), transparent);
+    border: 3px solid var(--racing-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 0 20px rgba(255, 235, 59, 0.4);
+    animation: rotate-pulse 3s linear infinite;
+}
+
+@keyframes rotate-pulse {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(1.05);
+    }
+}
+
+.battery-info-pro {
+    text-align: left;
+}
+
+.battery-value-pro {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.battery-status-pro {
+    font-size: 0.75rem;
+    color: var(--racing-green);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+/* ===== PRESSURES SECTION ===== */
+.pressures-section-pro {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.section-header-pro {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--racing-orange);
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--racing-orange);
+}
+
+.pressure-item-pro {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pressure-item-pro:last-child {
+    border-bottom: none;
+}
+
+.pressure-label-pro {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.pressure-value-pro {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.pressure-bar-pro {
+    flex: 1;
+    height: 6px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 3px;
+    margin: 0 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.pressure-bar-fill-pro {
+    height: 100%;
+    background: linear-gradient(90deg, var(--racing-cyan), var(--racing-purple));
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+/* ===== TIRES GRID ===== */
+.tires-grid-pro {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.tire-card-pro {
+    background: rgba(26, 31, 46, 0.5);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.tire-position-pro {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.tire-pressure-pro {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--racing-cyan);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tire-temp-pro {
+    font-size: 1rem;
+    color: var(--racing-orange);
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+
+/* ===== FUEL SECTION ===== */
+.fuel-section-pro {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.fuel-stats-pro {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fuel-stat-pro {
+    text-align: center;
+}
+
+.fuel-stat-label-pro {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.fuel-stat-value-pro {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--racing-purple);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .dashboard-pro {
+        padding: 1rem;
+    }
+
+    .gauges-grid-pro {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .gauge-value-large-pro {
+        font-size: 2.5rem;
+    }
+
+    .gear-value-pro {
+        font-size: 4rem;
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Critical State Animations (tw-animate-css compatible) */
+@keyframes critical-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px var(--racing-red-glow);
+        border-color: var(--racing-red);
+    }
+
+    50% {
+        box-shadow: 0 0 40px var(--racing-red-glow), 0 0 60px rgba(255, 0, 60, 0.2);
+        border-color: rgba(255, 0, 60, 0.8);
+    }
+}
+
+@keyframes critical-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes warning-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px var(--racing-orange-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 30px var(--racing-orange-glow);
+    }
+}
+
+@keyframes live-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+}
+
+@keyframes sweep {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Status animation classes */
+.animate-critical {
+    animation: critical-pulse 0.8s ease-in-out infinite;
+}
+
+.animate-critical-blink {
+    animation: critical-blink 0.5s ease-in-out infinite;
+}
+
+.animate-warning {
+    animation: warning-glow 1.5s ease-in-out infinite;
+}
+
+.animate-live {
+    animation: live-pulse 2s ease-in-out infinite;
+}
+
+.gauge-card-pro {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.gauge-card-pro:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.gauge-card-pro:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.gauge-card-pro:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.gauge-card-pro:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.gauge-card-pro:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.gauge-card-pro:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+/* ===== D3 GAUGE SUPPORT ===== */
+.d3-gauge-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.d3-gauge-svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+}
+
+/* SVG path styling */
+.d3-gauge-container path {
+    transition: fill var(--transition-normal),
+        stroke var(--transition-normal);
+}
+
+.d3-gauge-container text {
+    font-family: var(--font-mono);
+    user-select: none;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Typography */
+.font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.text-glow-cyan {
+    text-shadow: 0 0 20px var(--racing-cyan-glow);
+}
+
+.text-glow-red {
+    text-shadow: 0 0 20px var(--racing-red-glow);
+}
+
+.text-glow-green {
+    text-shadow: 0 0 20px var(--racing-green-glow);
+}
+
+.text-glow-orange {
+    text-shadow: 0 0 20px var(--racing-orange-glow);
+}
+
+/* Glass morphism effects */
+.glass-panel {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-default);
+}
+
+.glass-panel-dark {
+    background: var(--bg-overlay);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+/* Accent borders */
+.border-accent-top {
+    border-top: 2px solid;
+    border-image: linear-gradient(90deg, var(--racing-cyan), transparent) 1;
+}
+
+.border-accent-left {
+    border-left: 3px solid var(--racing-cyan);
+}
+
+.border-accent-gradient {
+    border: 1px solid transparent;
+    background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+        linear-gradient(135deg, var(--racing-cyan), var(--racing-purple)) border-box;
+}
+
+/* Shimmer loading effect */
+.shimmer {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+    animation: sweep 2s infinite;
+}
+
+/* ===== TABLET OPTIMIZATIONS ===== */
+/* For rugged tablets in racing vehicles */
+@media (min-width: 768px) and (max-width: 1024px) {
+    :root {
+        /* Increase touch targets for vibration resistance */
+        --touch-target-min: 48px;
+    }
+
+    .gauge-card-pro,
+    .telemetry-widget {
+        min-height: 160px;
+    }
+
+    /* Larger text for readability in motion */
+    .gauge-value-large-pro,
+    .gauge-value {
+        font-size: 2rem !important;
+    }
+
+    .font-mono-tabular {
+        font-size: 1.25rem;
+    }
+}
+
+/* High contrast mode for bright sunlight */
+@media (prefers-contrast: high) {
+    :root {
+        --bg-primary: #000000;
+        --bg-secondary: #0a0a0a;
+        --bg-card: rgba(0, 0, 0, 0.95);
+        --text-primary: #ffffff;
+        --border-default: rgba(255, 255, 255, 0.15);
+    }
+
+    .gauge-value,
+    .gear-value-pro {
+        font-weight: 900;
+        -webkit-font-smoothing: antialiased;
+    }
+}
+
+/* ===== LEAFLET MAP DARK THEME ===== */
+.leaflet-container {
+    background: var(--bg-secondary) !important;
+}
+
+.leaflet-tile-pane {
+    filter: saturate(0.8) contrast(1.1);
+}
+
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-control-zoom a {
+    background: var(--bg-glass) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-default) !important;
+    backdrop-filter: blur(8px);
+}
+
+.leaflet-control-zoom a:hover {
+    background: var(--bg-card-hover) !important;
+    color: var(--racing-cyan) !important;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--racing-cyan);
+}

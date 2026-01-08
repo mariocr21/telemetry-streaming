@@ -22,6 +22,35 @@
       </div>
 
       <div class="flex items-center space-x-2 pointer-events-auto">
+        
+        <!-- Toggle Layers Dropdown -->
+        <div class="relative">
+          <div v-if="showLayerMenu" @click="showLayerMenu = false" class="fixed inset-0 z-40 cursor-default"></div>
+
+          <button 
+            @click="showLayerMenu = !showLayerMenu"
+            class="bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600/50 hover:bg-slate-800/90 transition-colors text-white"
+            title="Cambiar vista de mapa"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"></path>
+            </svg>
+          </button>
+          
+          <!-- Dropdown Menu -->
+          <div v-if="showLayerMenu" class="absolute right-0 top-full mt-2 w-32 bg-slate-900/95 backdrop-blur-md rounded-lg border border-slate-600/50 shadow-xl overflow-hidden z-50">
+            <button @click="changeMapLayer('dark')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800 text-slate-300 flex items-center" :class="{'text-cyan-400 font-bold': activeLayer === 'dark'}">
+              <span class="w-2 h-2 rounded-full bg-slate-800 border border-slate-600 mr-2"></span> Oscuro
+            </button>
+            <button @click="changeMapLayer('light')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800 text-slate-300 flex items-center" :class="{'text-cyan-400 font-bold': activeLayer === 'light'}">
+              <span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-400 mr-2"></span> Claro
+            </button>
+            <button @click="changeMapLayer('satellite')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800 text-slate-300 flex items-center" :class="{'text-cyan-400 font-bold': activeLayer === 'satellite'}">
+              <span class="w-2 h-2 rounded-full bg-green-800 border border-green-600 mr-2"></span> Satélite
+            </button>
+          </div>
+        </div>
+
         <button 
           @click="centerOnVehicle" 
           :disabled="!hasValidGpsData"
@@ -118,13 +147,27 @@ interface ConnectionStatus {
   status: string
 }
 
-// Props
-const props = defineProps<{
-  selectedVehicle: Vehicle | null | any
-  isLoading: boolean
-  isRealTimeActive: boolean
-  connectionStatus: ConnectionStatus | null
-}>()
+// Props - Made optional with defaults for use in DynamicDashboard
+const props = withDefaults(defineProps<{
+  selectedVehicle?: any
+  isLoading?: boolean
+  isRealTimeActive?: boolean
+  connectionStatus?: { is_online: boolean; status: string } | null
+  latitude?: number
+  latitude?: number
+  longitude?: number
+  heading?: number
+  defaultLayer?: 'dark' | 'light' | 'satellite'
+}>(), {
+  selectedVehicle: null,
+  isLoading: false,
+  isRealTimeActive: false,
+  connectionStatus: null,
+  latitude: 0,
+  longitude: 0,
+  heading: 0,
+  defaultLayer: 'dark',
+})
 
 // Estado
 const map = ref<L.Map | null>(null)
@@ -137,6 +180,45 @@ const currentHeading = ref<number | null>(null)
 const isTracking = ref(true)
 const trail = ref<Position[]>([])
 const maxTrailPoints = 100
+
+// Control de Capas
+const showLayerMenu = ref(false)
+const activeLayer = ref<'dark' | 'light' | 'satellite'>('dark')
+const currentTileLayer = ref<L.TileLayer | null>(null)
+
+const TILE_LAYERS = {
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    attribution: '© CartoDB, © OpenStreetMap contributors'
+  },
+  light: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    attribution: '© CartoDB, © OpenStreetMap contributors'
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  }
+}
+
+const changeMapLayer = (layerType: 'dark' | 'light' | 'satellite') => {
+  activeLayer.value = layerType
+  showLayerMenu.value = false
+  
+  if (!map.value) return
+
+  // Remover capa anterior
+  if (currentTileLayer.value) {
+    map.value.removeLayer(currentTileLayer.value)
+  }
+
+  // Agregar nueva capa
+  const layerConfig = TILE_LAYERS[layerType];
+  currentTileLayer.value = L.tileLayer(layerConfig.url, {
+    attribution: layerConfig.attribution,
+    maxZoom: 19
+  }).addTo(map.value)
+}
 
 // GPS sensor PIDs
 const GPS_PIDS = {
@@ -200,11 +282,8 @@ const initializeMap = async () => {
     preferCanvas: false
   })
 
-  // Usar una capa de mapa con estilo oscuro para coincidir con la UI
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-    attribution: '© CartoDB, © OpenStreetMap contributors',
-    maxZoom: 19
-  }).addTo(map.value)
+  // Inicializar con la capa configurada
+  changeMapLayer(props.defaultLayer)
 
   setTimeout(() => {
     if (map.value) {

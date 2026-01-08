@@ -415,7 +415,7 @@ class VehicleController extends Controller
         }
 
         $syncedCount = 0;
-        $supportedPidList = array_keys(array_filter($vehicle->supported_pids));
+        $supportedPidList = array_keys(array_filter($vehicle->supported_pids ?? []));
 
         if (empty($supportedPidList)) {
             return back()->withErrors(['message' => 'No hay PIDs válidos para sincronizar.']);
@@ -474,13 +474,13 @@ class VehicleController extends Controller
                     ->limit(10)
                     ->get()
                     ->map(function ($register) {
-                        return [
-                            'id' => $register->id,
-                            'value' => (float) $register->value,
-                            'recorded_at' => $register->recorded_at ? $register->recorded_at->format('Y-m-d H:i:s') : null,
-                            'recorded_at_human' => $register->recorded_at ? $register->recorded_at->diffForHumans() : 'Sin fecha',
-                        ];
-                    });
+                    return [
+                        'id' => $register->id,
+                        'value' => (float) $register->value,
+                        'recorded_at' => $register->recorded_at ? $register->recorded_at->format('Y-m-d H:i:s') : null,
+                        'recorded_at_human' => $register->recorded_at ? $register->recorded_at->diffForHumans() : 'Sin fecha',
+                    ];
+                });
 
                 // Calcular estadísticas básicas
                 $values = $recentRegisters->pluck('value')->filter();
@@ -593,6 +593,12 @@ class VehicleController extends Controller
                 'configuration_progress' => $totalSensors > 0 ? round(($activeSensors / $totalSensors) * 100) : 0,
             ],
             'recent_activity' => $recentActivity->toArray(),
+            'available_sensors' => Sensor::select('id', 'pid', 'name', 'description', 'category', 'unit', 'is_standard')
+                ->orderBy('category')
+                ->orderBy('name')
+                ->get()
+                ->toArray(),
+            'existing_sensor_ids' => $vehicle->vehicleSensors->pluck('sensor_id')->toArray(),
             'can' => [
                 'view' => true,
                 'update' => true,
@@ -699,15 +705,21 @@ class VehicleController extends Controller
         }
 
         $request->validate([
+            'is_active' => 'boolean',
             'frequency_seconds' => 'required|integer|min:1|max:3600',
             'min_value' => 'nullable|numeric',
             'max_value' => 'nullable|numeric',
+            'mapping_key' => 'nullable|string|max:255',
+            'source_type' => 'nullable|string|in:OBD2,CAN_CUSTOM,GPS,VIRTUAL',
         ]);
 
         $vehicleSensor->update([
+            'is_active' => $request->boolean('is_active'),
             'frequency_seconds' => $request->frequency_seconds,
             'min_value' => $request->min_value,
             'max_value' => $request->max_value,
+            'mapping_key' => $request->mapping_key,
+            'source_type' => $request->source_type ?? 'OBD2',
         ]);
 
         return response()->json([
@@ -802,5 +814,66 @@ class VehicleController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    /**
+     * Add sensors from the global catalog to a vehicle
+     */
+    public function addSensors(Client $client, ClientDevice $device, Vehicle $vehicle, Request $request)
+    {
+        // Verify permissions
+        if ($vehicle->client_device_id !== $device->id || $device->client_id !== $client->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'sensors' => 'required|array|min:1',
+            'sensors.*.sensor_id' => 'required|exists:sensors,id',
+            'sensors.*.mapping_key' => 'nullable|string|max:255',
+            'sensors.*.source_type' => 'nullable|string|in:OBD2,CAN_CUSTOM,GPS,ANALOG,DIGITAL,VIRTUAL',
+        ]);
+
+        $addedCount = 0;
+        $existingCount = 0;
+
+        foreach ($request->sensors as $sensorData) {
+            // Check if sensor already exists for this vehicle
+            $exists = $vehicle->vehicleSensors()
+                ->where('sensor_id', $sensorData['sensor_id'])
+                ->exists();
+
+            if ($exists) {
+                $existingCount++;
+                continue;
+            }
+
+            // Get the sensor from catalog
+            $sensor = Sensor::find($sensorData['sensor_id']);
+            if (!$sensor)
+                continue;
+
+            // Create vehicle sensor
+            $vehicle->vehicleSensors()->create([
+                'sensor_id' => $sensorData['sensor_id'],
+                'mapping_key' => $sensorData['mapping_key'] ?? $sensor->pid,
+                'source_type' => $sensorData['source_type'] ?? ($sensor->is_standard ? 'OBD2' : 'CAN_CUSTOM'),
+                'is_active' => true,
+                'frequency_seconds' => 5,
+                'min_value' => $sensor->min_value,
+                'max_value' => $sensor->max_value,
+            ]);
+
+            $addedCount++;
+        }
+
+        $message = $addedCount > 0
+            ? "Se agregaron {$addedCount} sensor(es) exitosamente."
+            : "No se agregaron nuevos sensores.";
+
+        if ($existingCount > 0) {
+            $message .= " ({$existingCount} ya estaban asignados)";
+        }
+
+        return back()->with('message', $message);
     }
 }

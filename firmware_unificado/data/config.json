@@ -1,0 +1,71 @@
+{
+  "version": "3.0",
+  "device": {
+    "id": "NEURONA_001",
+    "car_id": "TRUCK-2024-001",
+    "source": "CAN_ONLY"
+  },
+  "wifi": {
+    "ssid": "",
+    "password": ""
+  },
+  "cloud": {
+    "protocol": "mqtt",
+    "interval_ms": 1000,
+    "debug_mode": false,
+    "mqtt": {
+      "server": "broker.neurona.mx",
+      "port": 1883,
+      "user": "",
+      "password": "",
+      "topic": "vehicles/telemetry"
+    },
+    "http": {
+      "url": "https://api.neurona.mx/telemetry"
+    }
+  },
+  "serial": {
+    "interval_ms": 30
+  },
+  "gps": {
+    "enabled": true,
+    "rx_pin": 16,
+    "tx_pin": 17,
+    "baud": 9600
+  },
+  "imu": {
+    "enabled": true,
+    "sda_pin": 21,
+    "scl_pin": 22
+  },
+  "can": {
+    "enabled": true,
+    "cs_pin": 5,
+    "int_pin": 4,
+    "baud_kbps": 500,
+    "crystal_mhz": 8
+  },
+  "obd": {
+    "enabled": false,
+    "mode": "direct",
+    "pids_enabled": "0x0C,0x0D,0x04,0x05,0x10,0x0B,BAT",
+    "poll_interval_ms": 100,
+    "elm_wifi": {
+      "ssid": "",
+      "password": "",
+      "ip": "192.168.0.10",
+      "port": 35000
+    },
+    "uart": {
+      "rx_pin": 32,
+      "tx_pin": 33,
+      "baud": 460800
+    }
+  },
+  "fuel": {
+    "method": "AUTO",
+    "displacement_l": 5.0,
+    "volumetric_efficiency": 0.85,
+    "air_fuel_ratio": 14.7
+  }
+}

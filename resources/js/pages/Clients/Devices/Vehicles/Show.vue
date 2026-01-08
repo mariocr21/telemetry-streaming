@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import ExportSensorDataModal from '@/components/ExportSensorDataModal.vue';
+import SensorConfigModal from './SensorConfigModal.vue';
+import AddSensorModal from './AddSensorModal.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
@@ -30,9 +32,11 @@ import {
     Filter,
     Gauge,
     Info,
+    LayoutDashboard,
     MapPin,
     MoreVertical,
     Palette,
+    Plus,
     Power,
     PowerOff,
     RefreshCw,
@@ -63,6 +67,8 @@ interface VehicleSensor {
     frequency_seconds: number;
     min_value?: number;
     max_value?: number;
+    mapping_key?: string;
+    source_type?: string;
     last_reading_at?: string;
     sensor: Sensor;
     recent_registers: Array<{
@@ -126,6 +132,16 @@ interface RecentActivity {
     sensor_category: string;
 }
 
+interface AvailableSensor {
+    id: number;
+    pid: string;
+    name: string;
+    description: string | null;
+    category: string;
+    unit: string;
+    is_standard: boolean;
+}
+
 interface Props {
     client: Client;
     device: Device;
@@ -139,6 +155,8 @@ interface Props {
         configuration_progress: number;
     };
     recent_activity: RecentActivity[];
+    available_sensors: AvailableSensor[];
+    existing_sensor_ids: number[];
     can: {
         view: boolean;
         update: boolean;
@@ -156,6 +174,7 @@ const selectedCategory = ref('all');
 const isRefreshing = ref(false);
 const showSensorConfig = ref(false);
 const selectedSensor = ref<VehicleSensor | null>(null);
+const showAddSensorModal = ref(false);
 
 // Computadas
 const flashMessage = computed(() => {
@@ -305,6 +324,18 @@ const refreshData = () => {
     });
 };
 
+// Sincronizar sensores con el vehículo
+const isSyncing = ref(false);
+const syncSensors = () => {
+    isSyncing.value = true;
+    router.post(route('clients.devices.vehicles.sync', [props.client.id, props.device.id, props.vehicle.id]), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            isSyncing.value = false;
+        },
+    });
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Clientes', href: '/clients' },
     { title: props.client.full_name, href: `/clients/${props.client.id}` },
@@ -363,6 +394,27 @@ const showExportModal = ref(false);
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
+                    <!-- 🚀 Dashboard Links -->
+                    <Link :href="`/dashboard-dynamic/${vehicle.id}`">
+                        <Button size="sm" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 shadow-lg">
+                            <Activity class="mr-2 h-4 w-4" />
+                            Dashboard en Vivo
+                        </Button>
+                    </Link>
+
+                    <Link :href="`/dashboard-config/${vehicle.id}/edit`">
+                        <Button variant="outline" size="sm" class="border-cyan-500/50 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20">
+                            <LayoutDashboard class="mr-2 h-4 w-4" />
+                            Configurar Dashboard
+                        </Button>
+                    </Link>
+
+                    <!-- 🔄 Sync Sensors Button -->
+                    <Button @click="syncSensors" :disabled="isSyncing" size="sm" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 shadow-lg">
+                        <RefreshCw :class="['mr-2 h-4 w-4', { 'animate-spin': isSyncing }]" />
+                        {{ isSyncing ? 'Sincronizando...' : 'Sincronizar Sensores' }}
+                    </Button>
+
                     <Button @click="refreshData" :disabled="isRefreshing" variant="outline" size="sm">
                         <RefreshCw :class="['mr-2 h-4 w-4', { 'animate-spin': isRefreshing }]" />
                         Actualizar
@@ -611,40 +663,64 @@ const showExportModal = ref(false);
                         <!-- Filtros de Sensores -->
                         <Card>
                             <CardHeader>
-                                <div class="flex items-center justify-between">
+                                <div class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                                     <CardTitle class="flex items-center text-lg">
                                         <Gauge class="mr-2 h-5 w-5 text-blue-600" />
-                                        Sensores ({{ filteredSensors.length }})
-
-                                        <button
-                                            @click="showExportModal = true"
-                                            class="flex w-full items-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                        >
-                                            <Download class="mr-2 h-4 w-4" />
-                                            Exportar Datos
-                                        </button>
+                                        Sensores del Vehículo ({{ filteredSensors.length }})
                                     </CardTitle>
 
-                                    <div class="flex items-center space-x-2">
-                                        <Filter class="h-4 w-4 text-gray-400" />
-                                        <select
-                                            v-model="selectedCategory"
-                                            class="rounded border border-gray-300 px-3 py-1 text-sm dark:border-gray-600 dark:bg-gray-700"
-                                        >
-                                            <option value="all">Todas las categorías</option>
-                                            <option v-for="category in categories" :key="category" :value="category">
-                                                {{ category.charAt(0).toUpperCase() + category.slice(1) }}
-                                            </option>
-                                        </select>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <!-- Add Sensor from Catalog -->
+                                        <Button @click="showAddSensorModal = true" size="sm" class="bg-cyan-600 hover:bg-cyan-700 text-white">
+                                            <Plus class="mr-2 h-4 w-4" />
+                                            Agregar Sensor
+                                        </Button>
+
+                                        <!-- Sync Sensors -->
+                                        <Button @click="syncSensors" :disabled="isSyncing" size="sm" class="bg-purple-600 hover:bg-purple-700 text-white">
+                                            <RefreshCw :class="['mr-2 h-4 w-4', { 'animate-spin': isSyncing }]" />
+                                            {{ isSyncing ? 'Sincronizando...' : 'Sincronizar' }}
+                                        </Button>
+                                        
+                                        <!-- Export Data -->
+                                        <Button @click="showExportModal = true" variant="outline" size="sm">
+                                            <Download class="mr-2 h-4 w-4" />
+                                            Exportar
+                                        </Button>
+
+                                        <!-- Category Filter -->
+                                        <div class="flex items-center space-x-2">
+                                            <Filter class="h-4 w-4 text-gray-400" />
+                                            <select
+                                                v-model="selectedCategory"
+                                                class="rounded border border-gray-300 px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                            >
+                                                <option value="all">Todas las categorías</option>
+                                                <option v-for="category in categories" :key="category" :value="category">
+                                                    {{ category.charAt(0).toUpperCase() + category.slice(1) }}
+                                                </option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div v-if="filteredSensors.length === 0" class="py-8 text-center">
-                                    <Gauge class="mx-auto h-12 w-12 text-gray-400" />
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No hay sensores en esta categoría</h3>
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                        Los sensores aparecerán aquí cuando el vehículo sea detectado.
+                                <div v-if="filteredSensors.length === 0" class="py-12 text-center">
+                                    <div class="mx-auto h-16 w-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
+                                        <Gauge class="h-8 w-8 text-purple-600" />
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No hay sensores configurados</h3>
+                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                                        Sincroniza los sensores del vehículo para comenzar a recibir datos de telemetría en tiempo real.
+                                    </p>
+                                    <div class="mt-6">
+                                        <Button @click="syncSensors" :disabled="isSyncing" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-lg">
+                                            <RefreshCw :class="['mr-2 h-4 w-4', { 'animate-spin': isSyncing }]" />
+                                            {{ isSyncing ? 'Sincronizando sensores...' : 'Sincronizar Sensores Ahora' }}
+                                        </Button>
+                                    </div>
+                                    <p class="mt-4 text-xs text-gray-400">
+                                        💡 Los sensores se detectan automáticamente cuando el dispositivo OBD2 está conectado al vehículo.
                                     </p>
                                 </div>
 
@@ -1014,6 +1090,24 @@ const showExportModal = ref(false);
             :vehicle-id="vehicle.id"
             :client-id="client.id"
             :device-id="device.id"
+        />
+        <SensorConfigModal
+            v-model:open="showSensorConfig"
+            :sensor="selectedSensor"
+            :vehicle-id="vehicle.id"
+            :client-id="client.id"
+            :device-id="device.id"
+            @updated="refreshData"
+        />
+        <AddSensorModal
+            :show="showAddSensorModal"
+            :vehicle-id="vehicle.id"
+            :client-id="client.id"
+            :device-id="device.id"
+            :available-sensors="available_sensors"
+            :existing-sensor-ids="existing_sensor_ids"
+            @close="showAddSensorModal = false"
+            @added="refreshData"
         />
     </AppLayout>
 </template>

@@ -20,7 +20,7 @@ class DashboardController extends Controller
     {
         // Obtenemos los dispositivos, mediante el cliente o si es superadmin, todos los dispositivos
         if ($request->user()->isSuperAdmin()) {
-            $devices = ClientDevice::with('DeviceInventory', 'vehicles')->whereHas('vehicles', function ($query) {
+            $devices = ClientDevice::with('DeviceInventory', 'vehicles', 'client')->whereHas('vehicles', function ($query) {
                 $query->where('status', true);
             })->get();
         } else {
@@ -37,6 +37,7 @@ class DashboardController extends Controller
         ]);
         return Inertia::render('Dashboard', [
             'devices' => new DeviceClientCollection($devices),
+            'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
     }
 
@@ -359,7 +360,7 @@ class DashboardController extends Controller
             $calculatedFormula = str_replace(['A', 'B'], [$A, $B], $formula);
 
             // Evaluar de manera segura usando eval (considera usar una librería más segura en producción)
-            $result = eval("return $calculatedFormula;");
+            $result = eval ("return $calculatedFormula;");
 
             return round((float) $result, 2);
         } catch (\Exception $e) {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,7 +15,7 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         // Obtener el label del rol
-        $roleLabel = match($this->role) {
+        $roleLabel = match ($this->role) {
             'SA' => 'Super Administrador',
             'CA' => 'Administrador de Cliente',
             'CU' => 'Usuario de Cliente',
@@ -33,7 +32,7 @@ class UserResource extends JsonResource
             'client_id' => $this->client_id,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            
+
             // Relación con cliente si está cargada
             'client' => $this->whenLoaded('client', function () {
                 return $this->client ? [

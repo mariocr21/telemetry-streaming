@@ -1,124 +1,109 @@
 <script setup lang="ts">
+/**
+ * SpeedometerWidget.vue - NEURONA DESIGN SYSTEM
+ * 
+ * SVG-based speedometer gauge. Compatible with WidgetRenderer.
+ */
 import { computed, ref, watch, onMounted } from 'vue'
 
-interface Sensor {
-    id: number
-    pid: string
-    name: string
-    description: string
-    category: string
-    unit: string
-    data_type: string
-    min_value?: number
-    max_value?: number
-    requires_calculation?: boolean
-    calculation_formula?: string
+// Props compatible with WidgetRenderer
+interface Props {
+    value?: number;
+    min?: number;
+    max?: number;
+    label?: string;
+    unit?: string;
+    [key: string]: any; // Accept any additional props
 }
 
-interface VehicleSensor {
-    id: number
-    vehicle_id: number
-    sensor_id: number
-    is_active: boolean
-    frequency_seconds: number
-    min_value?: number
-    max_value?: number
-    last_reading_at?: string
-    sensor: Sensor
-}
+const props = withDefaults(defineProps<Props>(), {
+    value: 0,
+    min: 0,
+    max: 200,
+    label: 'Speed',
+    unit: 'km/h',
+});
 
-interface SensorData {
-    id: string
-    title: string
-    sensor: VehicleSensor
-    value: number
-    defaultValue: number
-}
+// Animated state
+const currentSpeed = ref(0);
 
-interface TickMark {
-    value: number
-    x1: number
-    y1: number
-    x2: number
-    y2: number
-    textX: number
-    textY: number
-    type: 'major' | 'minor'
-}
+// Constants for the speedometer
+const centerX = 100;
+const centerY = 90;
+const startAngle = -140;
+const endAngle = 140;
+const outerRadius = 85;
+const innerRadius = 70;
+const textRadius = 60;
+const needleLength = 65;
 
-const props = defineProps<{
-    sensor: SensorData
-    minSpeed?: number
-    maxSpeed?: number
-}>()
-
-// Valores por defecto
-const minSpeed = props.minSpeed ?? 0
-const maxSpeed = props.maxSpeed ?? 200
-
-// Estado animado
-const currentSpeed = ref(0)
-
-// Constantes para el velocímetro
-const centerX = 100
-const centerY = 90
-const startAngle = -140
-const endAngle = 140
-const outerRadius = 85
-const innerRadius = 70
-const textRadius = 60
-const needleLength = 65
-
-// Función para convertir velocidad a ángulo
+// Convert speed to angle
 const speedToAngle = (speed: number): number => {
-    const percentage = (speed - minSpeed) / (maxSpeed - minSpeed)
-    return startAngle + percentage * (endAngle - startAngle)
-}
+    const min = props.min ?? 0;
+    const max = props.max ?? 200;
+    const percentage = (speed - min) / (max - min);
+    return startAngle + percentage * (endAngle - startAngle);
+};
 
-// Función para convertir ángulo a radianes
+// Convert angle to radians
 const angleToRadians = (angle: number): number => {
-    return angle * Math.PI / 180
-}
+    return angle * Math.PI / 180;
+};
 
-// Calcular posición de la aguja
+// Calculate needle position
 const needleX = computed(() => {
-    const angle = speedToAngle(currentSpeed.value)
-    const radians = angleToRadians(angle)
-    return centerX + needleLength * Math.cos(radians)
-})
+    const angle = speedToAngle(currentSpeed.value);
+    const radians = angleToRadians(angle);
+    return centerX + needleLength * Math.cos(radians);
+});
 
 const needleY = computed(() => {
-    const angle = speedToAngle(currentSpeed.value)
-    const radians = angleToRadians(angle)
-    return centerY + needleLength * Math.sin(radians)
-})
+    const angle = speedToAngle(currentSpeed.value);
+    const radians = angleToRadians(angle);
+    return centerY + needleLength * Math.sin(radians);
+});
 
-// Calcular el arco de progreso
+// Calculate progress arc
 const arcPath = computed(() => {
-    const angle = speedToAngle(currentSpeed.value)
-    const radius = 78
+    const angle = speedToAngle(currentSpeed.value);
+    const radius = 78;
     
-    const startX = centerX + radius * Math.cos(angleToRadians(startAngle))
-    const startY = centerY + radius * Math.sin(angleToRadians(startAngle))
-    const endX = centerX + radius * Math.cos(angleToRadians(angle))
-    const endY = centerY + radius * Math.sin(angleToRadians(angle))
+    const startX = centerX + radius * Math.cos(angleToRadians(startAngle));
+    const startY = centerY + radius * Math.sin(angleToRadians(startAngle));
+    const endX = centerX + radius * Math.cos(angleToRadians(angle));
+    const endY = centerY + radius * Math.sin(angleToRadians(angle));
     
-    const largeArcFlag = Math.abs(angle - startAngle) <= 180 ? "0" : "1"
+    const largeArcFlag = Math.abs(angle - startAngle) <= 180 ? "0" : "1";
     
-    return `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`
-})
+    return `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
+});
 
-// Generar marcas del velocímetro
-const generateTicks = (): TickMark[] => {
-    const ticks: TickMark[] = []
+// Tick mark type
+interface TickMark {
+    value: number;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    textX: number;
+    textY: number;
+    type: 'major' | 'minor';
+}
+
+// Generate tick marks
+const ticks = computed<TickMark[]>(() => {
+    const tickMarks: TickMark[] = [];
+    const min = props.min ?? 0;
+    const max = props.max ?? 200;
+    const range = max - min;
+    const majorStep = range / 10; // 10 major divisions
     
-    // Marcas principales cada 20 km/h
-    for (let speed = minSpeed; speed <= maxSpeed; speed += 20) {
-        const angle = speedToAngle(speed)
-        const radians = angleToRadians(angle)
+    for (let speed = min; speed <= max; speed += majorStep) {
+        const angle = speedToAngle(speed);
+        const radians = angleToRadians(angle);
         
-        ticks.push({
-            value: speed,
+        tickMarks.push({
+            value: Math.round(speed),
             x1: centerX + innerRadius * Math.cos(radians),
             y1: centerY + innerRadius * Math.sin(radians),
             x2: centerX + outerRadius * Math.cos(radians),
@@ -126,15 +111,16 @@ const generateTicks = (): TickMark[] => {
             textX: centerX + textRadius * Math.cos(radians),
             textY: centerY + textRadius * Math.sin(radians),
             type: 'major'
-        })
+        });
         
-        // Marcas menores entre las principales (cada 10 km/h)
-        if (speed + 10 <= maxSpeed) {
-            const minorAngle = speedToAngle(speed + 10)
-            const minorRadians = angleToRadians(minorAngle)
+        // Minor tick in between
+        const minorSpeed = speed + majorStep / 2;
+        if (minorSpeed < max) {
+            const minorAngle = speedToAngle(minorSpeed);
+            const minorRadians = angleToRadians(minorAngle);
             
-            ticks.push({
-                value: speed + 10,
+            tickMarks.push({
+                value: Math.round(minorSpeed),
                 x1: centerX + (innerRadius + 5) * Math.cos(minorRadians),
                 y1: centerY + (innerRadius + 5) * Math.sin(minorRadians),
                 x2: centerX + outerRadius * Math.cos(minorRadians),
@@ -142,63 +128,66 @@ const generateTicks = (): TickMark[] => {
                 textX: centerX + textRadius * Math.cos(minorRadians),
                 textY: centerY + textRadius * Math.sin(minorRadians),
                 type: 'minor'
-            })
+            });
         }
     }
     
-    return ticks
-}
+    return tickMarks;
+});
 
-const ticks = generateTicks()
+// Get color based on value percentage
+const speedColor = computed(() => {
+    const min = props.min ?? 0;
+    const max = props.max ?? 200;
+    const percentage = (currentSpeed.value - min) / (max - min) * 100;
+    
+    if (percentage < 30) return '#06b6d4'; // cyan
+    if (percentage < 60) return '#10b981'; // green
+    if (percentage < 80) return '#f59e0b'; // yellow/amber
+    return '#ef4444'; // red
+});
 
-// Función para obtener color basado en velocidad
-const getSpeedColor = (speed: number): string => {
-    if (speed < 60) return '#06b6d4' // cyan
-    if (speed < 100) return '#10b981' // green
-    if (speed < 120) return '#f59e0b' // yellow
-    return '#ef4444' // red
-}
-
-const speedColor = computed(() => getSpeedColor(currentSpeed.value))
-
-// Animación suave para cambios de valor
-const animateValue = (targetValue: number, duration = 800) => {
-    const startValue = currentSpeed.value
-    const startTime = Date.now()
+// Smooth animation for value changes
+const animateValue = (targetValue: number, duration = 600) => {
+    const startValue = currentSpeed.value;
+    const startTime = Date.now();
     
     const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
         
-        // Easing function (ease-out-cubic)
-        const easeOut = 1 - Math.pow(1 - progress, 3)
+        // Ease-out cubic
+        const easeOut = 1 - Math.pow(1 - progress, 3);
         
-        currentSpeed.value = startValue + (targetValue - startValue) * easeOut
+        currentSpeed.value = startValue + (targetValue - startValue) * easeOut;
         
         if (progress < 1) {
-            requestAnimationFrame(animate)
+            requestAnimationFrame(animate);
         }
-    }
+    };
     
-    requestAnimationFrame(animate)
-}
+    requestAnimationFrame(animate);
+};
 
-// Observar cambios en el valor del sensor
-watch(() => props.sensor?.value, (newValue) => {
-    const targetValue = typeof newValue === 'number' ? newValue : 0
-    animateValue(targetValue)
-}, { immediate: true })
+// Watch for value changes
+watch(() => props.value, (newValue) => {
+    const targetValue = typeof newValue === 'number' ? newValue : 0;
+    animateValue(Math.min(Math.max(targetValue, props.min ?? 0), props.max ?? 200));
+}, { immediate: true });
 
-// Inicializar en 0
+// Initialize
 onMounted(() => {
-    currentSpeed.value = 0
-})
+    currentSpeed.value = props.value ?? 0;
+});
+
+// Display unit
+const displayUnit = computed(() => props.unit || 'km/h');
 </script>
 
 <template>
-    <div class="w-full h-full -py-2 -my-2">
+    <div class="w-full h-full min-h-[120px]">
         <svg viewBox="0 0 200 160" class="w-full h-full">
-            <!-- Fondo del velocímetro -->
+            <!-- Background circle -->
             <circle 
                 cx="100" 
                 cy="90" 
@@ -206,7 +195,7 @@ onMounted(() => {
                 class="fill-slate-800/80 stroke-slate-700/50 stroke-1"
             />
             
-            <!-- Arco de progreso -->
+            <!-- Progress arc -->
             <path
                 :d="arcPath"
                 :stroke="speedColor"
@@ -214,9 +203,9 @@ onMounted(() => {
                 style="filter: drop-shadow(0 0 2px currentColor)"
             />
             
-            <!-- Marcas del velocímetro -->
-            <g v-for="tick in ticks" :key="tick.value">
-                <!-- Líneas de las marcas -->
+            <!-- Tick marks -->
+            <g v-for="tick in ticks" :key="`tick-${tick.value}-${tick.type}`">
+                <!-- Tick lines -->
                 <line
                     :x1="tick.x1" 
                     :y1="tick.y1"
@@ -226,7 +215,7 @@ onMounted(() => {
                     :stroke-width="tick.type === 'major' ? 2 : 1"
                 />
                 
-                <!-- Números en las marcas principales -->
+                <!-- Numbers on major ticks -->
                 <text
                     v-if="tick.type === 'major'"
                     :x="tick.textX" 
@@ -239,7 +228,7 @@ onMounted(() => {
                 </text>
             </g>
             
-            <!-- Aguja del velocímetro -->
+            <!-- Needle -->
             <g class="transition-transform duration-300">
                 <line
                     x1="100" 
@@ -261,10 +250,10 @@ onMounted(() => {
                 />
             </g>
             
-            <!-- Centro decorativo -->
+            <!-- Center dot -->
             <circle cx="100" cy="90" r="2" fill="#1e293b"/>
             
-            <!-- Valor digital -->
+            <!-- Digital value -->
             <text 
                 x="100" 
                 y="120" 
@@ -274,14 +263,14 @@ onMounted(() => {
                 {{ Math.round(currentSpeed) }}
             </text>
             
-            <!-- Unidad -->
+            <!-- Unit -->
             <text 
                 x="100" 
                 y="135" 
                 text-anchor="middle" 
                 class="fill-slate-400 text-sm"
             >
-                {{ sensor.sensor.sensor.unit }}
+                {{ displayUnit }}
             </text>
         </svg>
     </div>

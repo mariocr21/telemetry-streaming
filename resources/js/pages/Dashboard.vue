@@ -13,7 +13,7 @@ import TemperatureWidget from '@/components/Dashboard/TemperatureGaugeWidget.vue
 import ThrottleWidget from '@/components/Dashboard/ThrottleWidget.vue';
 import TransmissionGearWidget from '@/components/Dashboard/TransmissionGearWidget.vue';
 import DashboardHeader from '@/components/DashboardHeader.vue';
-import DeviceSelectModal from '@/components/DeviceSelectModal.vue';
+import VehicleSelectModal from '@/components/VehicleSelectModal.vue';
 import DtcWidget from '@/components/Dtcwidget.vue';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -60,7 +60,10 @@ interface DiagnosticTroubleCode {
 }
 
 // --- PROPS Y ESTADO ---
-const props = defineProps<{ devices: devicesCollectionInterface }>();
+const props = defineProps<{ 
+    devices: devicesCollectionInterface;
+    isSuperAdmin?: boolean;
+}>();
 
 const selectedDevice = ref<Device | null>(null);
 const selectedVehicle = ref<Vehicle | null>(null);
@@ -767,10 +770,11 @@ onUnmounted(() => {
         </div>
 
         <!-- Modal -->
-        <DeviceSelectModal
+        <VehicleSelectModal
             :show="showDeviceModal"
             :devices="props.devices"
             :selected-device-id="selectedDevice?.id || null"
+            :is-super-admin="props.isSuperAdmin"
             @close="showDeviceModal = false"
             @select="selectDeviceFromModal"
         />

@@ -11,6 +11,7 @@ import type { BreadcrumbItem, Client, ClientDevice, User as UserType } from '@/t
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { route } from 'ziggy-js'; // Agregar esta importación
 import {
+    Activity,
     AlertCircle,
     ArrowLeft,
     Building,
@@ -602,6 +603,16 @@ const breadcrumbs: BreadcrumbItem[] = [
                                                 <div v-else class="text-gray-400" title="Desconectado">
                                                     <WifiOff class="h-4 w-4" />
                                                 </div>
+
+                                                <!-- Quick Dashboard Access if device has active vehicle -->
+                                                <Link
+                                                    v-if="device.vehicle?.id"
+                                                    :href="`/dashboard-dynamic/${device.vehicle.id}`"
+                                                    class="rounded p-1 text-cyan-500 hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                                                    title="Ver Dashboard en Vivo"
+                                                >
+                                                    <Activity class="h-4 w-4" />
+                                                </Link>
 
                                                 <Link
                                                     :href="route('clients.devices.show', [client.id, device.id])"

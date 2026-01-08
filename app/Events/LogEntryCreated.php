@@ -7,7 +7,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class LogEntryCreated implements ShouldBroadcast  // ← Agregar interfaz
+class LogEntryCreated implements ShouldBroadcastNow  // ← Agregar interfaz
 {
     use Dispatchable, SerializesModels;
 

@@ -129,6 +129,36 @@ const getSortIcon = (column: string) => {
   return direction.value === 'asc' ? ArrowUp : ArrowDown
 }
 
+// Función para exportar clientes a CSV
+const exportClients = () => {
+  const headers = ['Nombre', 'Email', 'Teléfono', 'Empresa', 'Ciudad', 'Estado', 'País', 'Fecha Registro'];
+  const csvRows = [headers.join(',')];
+  
+  props.clients.data.forEach(client => {
+    const row = [
+      `"${client.full_name}"`,
+      `"${client.email}"`,
+      `"${client.phone || ''}"`,
+      `"${client.company || ''}"`,
+      `"${client.city || ''}"`,
+      `"${client.state || ''}"`,
+      `"${client.country || ''}"`,
+      `"${new Date(client.created_at).toLocaleDateString('es-ES')}"`,
+    ];
+    csvRows.push(row.join(','));
+  });
+  
+  const csvContent = csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // Computadas
 const flashMessage = computed(() => {
   const flash = page.props.flash as any
@@ -183,7 +213,7 @@ onMounted(() => {
             <span class="ml-2 hidden sm:inline">Actualizar</span>
           </Button>
           
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" @click="exportClients">
             <Download class="h-4 w-4" />
             <span class="ml-2 hidden sm:inline">Exportar</span>
           </Button>

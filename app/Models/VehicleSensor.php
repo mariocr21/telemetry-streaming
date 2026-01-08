@@ -17,6 +17,8 @@ class VehicleSensor extends Model
         'frequency_seconds',
         'min_value',
         'max_value',
+        'mapping_key',
+        'source_type',
         'last_reading_at'
     ];
 

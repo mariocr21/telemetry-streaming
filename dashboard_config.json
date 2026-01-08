@@ -1,0 +1,688 @@
+﻿{
+    "success":  true,
+    "data":  {
+                 "vehicle_id":  1,
+                 "layout":  {
+                                "id":  1,
+                                "name":  "Baja Race Dashboard",
+                                "theme":  "cyberpunk-dark",
+                                "grid_config":  {
+                                                    "columns":  12,
+                                                    "gap":  4,
+                                                    "breakpoints":  {
+                                                                        "lg":  {
+                                                                                   "columns":  12
+                                                                               },
+                                                                        "md":  {
+                                                                                   "columns":  6
+                                                                               },
+                                                                        "sm":  {
+                                                                                   "columns":  1
+                                                                               }
+                                                                    }
+                                                }
+                            },
+                 "groups":  [
+                                {
+                                    "id":  166,
+                                    "name":  "Temperatures",
+                                    "slug":  "temperatures",
+                                    "icon":  "thermometer",
+                                    "grid":  {
+                                                 "colStart":  1,
+                                                 "colSpan":  4,
+                                                 "rowStart":  null,
+                                                 "rowSpan":  1
+                                             },
+                                    "style":  {
+                                                  "bgColor":  "bg-dash-card",
+                                                  "borderColor":  "border-slate-700"
+                                              },
+                                    "is_collapsible":  false,
+                                    "is_collapsed":  false,
+                                    "widgets":  [
+                                                    {
+                                                        "id":  201,
+                                                        "type":  "text_grid",
+                                                        "component":  "TextGridWidget",
+                                                        "size":  "md",
+                                                        "props":  {
+                                                                      "columns":  4,
+                                                                      "gap":  2,
+                                                                      "items":  [
+                                                                                    {
+                                                                                        "label":  "Coolant",
+                                                                                        "slot":  "coolant",
+                                                                                        "unit":  "°"
+                                                                                    },
+                                                                                    {
+                                                                                        "label":  "Oil",
+                                                                                        "slot":  "oil",
+                                                                                        "unit":  "°"
+                                                                                    },
+                                                                                    {
+                                                                                        "label":  "Trans",
+                                                                                        "slot":  "trans",
+                                                                                        "unit":  "°"
+                                                                                    },
+                                                                                    {
+                                                                                        "label":  "Intake",
+                                                                                        "slot":  "intake",
+                                                                                        "unit":  "°"
+                                                                                    }
+                                                                                ]
+                                                                  },
+                                                        "style_override":  null,
+                                                        "bindings":  [
+                                                                         {
+                                                                             "telemetry_key":  "Coolant_Temp",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "coolant",
+                                                                             "transform":  null,
+                                                                             "label":  "Coolant Temp",
+                                                                             "unit":  "°F",
+                                                                             "thresholds":  null
+                                                                         },
+                                                                         {
+                                                                             "telemetry_key":  "Oil_Temperature",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "oil",
+                                                                             "transform":  null,
+                                                                             "label":  "Oil Temperature",
+                                                                             "unit":  "°F",
+                                                                             "thresholds":  null
+                                                                         },
+                                                                         {
+                                                                             "telemetry_key":  "Transmission_Temp",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "trans",
+                                                                             "transform":  null,
+                                                                             "label":  "Transmission Temp",
+                                                                             "unit":  "°F",
+                                                                             "thresholds":  null
+                                                                         },
+                                                                         {
+                                                                             "telemetry_key":  "Intake_Air_Temp",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "intake",
+                                                                             "transform":  null,
+                                                                             "label":  "Intake Air Temp",
+                                                                             "unit":  "°F",
+                                                                             "thresholds":  null
+                                                                         }
+                                                                     ]
+                                                    }
+                                                ]
+                                },
+                                {
+                                    "id":  167,
+                                    "name":  "Oil \u0026 Fuel",
+                                    "slug":  "oil-fuel",
+                                    "icon":  "droplets",
+                                    "grid":  {
+                                                 "colStart":  5,
+                                                 "colSpan":  4,
+                                                 "rowStart":  null,
+                                                 "rowSpan":  1
+                                             },
+                                    "style":  {
+                                                  "bgColor":  "bg-dash-card",
+                                                  "borderColor":  "border-slate-700"
+                                              },
+                                    "is_collapsible":  false,
+                                    "is_collapsed":  false,
+                                    "widgets":  [
+                                                    {
+                                                        "id":  202,
+                                                        "type":  "linear_bar",
+                                                        "component":  "LinearBarD3",
+                                                        "size":  "md",
+                                                        "props":  {
+                                                                      "min":  0,
+                                                                      "max":  100,
+                                                                      "label":  "Fuel Press",
+                                                                      "unit":  "PSI",
+                                                                      "colorScheme":  "pressure"
+                                                                  },
+                                                        "style_override":  null,
+                                                        "bindings":  [
+                                                                         {
+                                                                             "telemetry_key":  "Fuel_Pressure",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  null,
+                                                                             "transform":  null,
+                                                                             "label":  "Fuel Pressure",
+                                                                             "unit":  "PSI",
+                                                                             "thresholds":  null
+                                                                         }
+                                                                     ]
+                                                    }
+                                                ]
+                                },
+                                {
+                                    "id":  168,
+                                    "name":  "Gear",
+                                    "slug":  "gear",
+                                    "icon":  "settings-2",
+                                    "grid":  {
+                                                 "colStart":  1,
+                                                 "colSpan":  4,
+                                                 "rowStart":  null,
+                                                 "rowSpan":  1
+                                             },
+                                    "style":  {
+                                                  "bgColor":  "bg-dash-card",
+                                                  "borderColor":  "border-slate-700"
+                                              },
+                                    "is_collapsible":  false,
+                                    "is_collapsed":  false,
+                                    "widgets":  [
+                                                    {
+                                                        "id":  203,
+                                                        "type":  "digital_value",
+                                                        "component":  "DigitalValueWidget",
+                                                        "size":  "md",
+                                                        "props":  {
+                                                                      "label":  "Gear",
+                                                                      "fontSize":  "6xl",
+                                                                      "fontWeight":  "black",
+                                                                      "textColor":  "white",
+                                                                      "fallbackValue":  "N"
+                                                                  },
+                                                        "style_override":  null,
+                                                        "bindings":  [
+                                                                         {
+                                                                             "telemetry_key":  "Current_Gear",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  null,
+                                                                             "transform":  null,
+                                                                             "label":  "Current Gear",
+                                                                             "unit":  "",
+                                                                             "thresholds":  null
+                                                                         }
+                                                                     ]
+                                                    }
+                                                ]
+                                },
+                                {
+                                    "id":  169,
+                                    "name":  "Electrical",
+                                    "slug":  "electrical",
+                                    "icon":  "zap",
+                                    "grid":  {
+                                                 "colStart":  7,
+                                                 "colSpan":  4,
+                                                 "rowStart":  null,
+                                                 "rowSpan":  1
+                                             },
+                                    "style":  {
+                                                  "bgColor":  "bg-dash-card",
+                                                  "borderColor":  "border-slate-700"
+                                              },
+                                    "is_collapsible":  false,
+                                    "is_collapsed":  false,
+                                    "widgets":  [
+                                                    {
+                                                        "id":  204,
+                                                        "type":  "text_grid",
+                                                        "component":  "TextGridWidget",
+                                                        "size":  "md",
+                                                        "props":  {
+                                                                      "columns":  2,
+                                                                      "gap":  4,
+                                                                      "items":  [
+                                                                                    {
+                                                                                        "label":  "Battery",
+                                                                                        "slot":  "voltage",
+                                                                                        "unit":  "V",
+                                                                                        "color":  "yellow-400"
+                                                                                    },
+                                                                                    {
+                                                                                        "label":  "Current",
+                                                                                        "slot":  "current",
+                                                                                        "unit":  "A",
+                                                                                        "color":  "yellow-400"
+                                                                                    }
+                                                                                ]
+                                                                  },
+                                                        "style_override":  null,
+                                                        "bindings":  [
+                                                                         {
+                                                                             "telemetry_key":  "Battery_Voltage",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "voltage",
+                                                                             "transform":  null,
+                                                                             "label":  "Battery Voltage",
+                                                                             "unit":  "V",
+                                                                             "thresholds":  null
+                                                                         },
+                                                                         {
+                                                                             "telemetry_key":  "Alternator_Current",
+                                                                             "target_prop":  "value",
+                                                                             "slot":  "current",
+                                                                             "transform":  null,
+                                                                             "label":  "Alternator Current",
+                                                                             "unit":  "A",
+                                                                             "thresholds":  null
+                                                                         }
+                                                                     ]
+                                                    }
+                                                ]
+                                },
+                                {
+                                    "id":  170,
+                                    "name":  "Velocidad",
+                                    "slug":  "velocidad",
+                                    "icon":  "gauge",
+                                    "grid":  {
+                                                 "colStart":  1,
+                                                 "colSpan":  4,
+                                                 "rowStart":  null,
+                                                 "rowSpan":  1
+                                             },
+                                    "style":  {
+                                                  "bgColor":  "bg-dash-card",
+                                                  "borderColor":  "border-slate-700"
+                                              },
+                                    "is_collapsible":  false,
+                                    "is_collapsed":  false,
+                                    "widgets":  [
+                                                    {
+                                                        "id":  205,
+                                                        "type":  "tire_grid",
+                                                        "component":  "TireGridWidget",
+                                                        "size":  "md",
+                                                        "props":  [
+                                                                      "{",
+                                                                      "\"",
+                                                                      "l",
+                                                                      "a",
+                                                                      "y",
+                                                                      "o",
+                                                                      "u",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "{",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "y",
+                                                                      "p",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "s",
+                                                                      "e",
+                                                                      "l",
+                                                                      "e",
+                                                                      "c",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "o",
+                                                                      "p",
+                                                                      "t",
+                                                                      "i",
+                                                                      "o",
+                                                                      "n",
+                                                                      "s",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "[",
+                                                                      "\"",
+                                                                      "2",
+                                                                      "x",
+                                                                      "2",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "h",
+                                                                      "o",
+                                                                      "r",
+                                                                      "i",
+                                                                      "z",
+                                                                      "o",
+                                                                      "n",
+                                                                      "t",
+                                                                      "a",
+                                                                      "l",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "v",
+                                                                      "e",
+                                                                      "r",
+                                                                      "t",
+                                                                      "i",
+                                                                      "c",
+                                                                      "a",
+                                                                      "l",
+                                                                      "\"",
+                                                                      "]",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "d",
+                                                                      "e",
+                                                                      "f",
+                                                                      "a",
+                                                                      "u",
+                                                                      "l",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "2",
+                                                                      "x",
+                                                                      "2",
+                                                                      "\"",
+                                                                      "}",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "s",
+                                                                      "h",
+                                                                      "o",
+                                                                      "w",
+                                                                      "P",
+                                                                      "r",
+                                                                      "e",
+                                                                      "s",
+                                                                      "s",
+                                                                      "u",
+                                                                      "r",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "{",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "y",
+                                                                      "p",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "b",
+                                                                      "o",
+                                                                      "o",
+                                                                      "l",
+                                                                      "e",
+                                                                      "a",
+                                                                      "n",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "d",
+                                                                      "e",
+                                                                      "f",
+                                                                      "a",
+                                                                      "u",
+                                                                      "l",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "t",
+                                                                      "r",
+                                                                      "u",
+                                                                      "e",
+                                                                      "}",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "s",
+                                                                      "h",
+                                                                      "o",
+                                                                      "w",
+                                                                      "T",
+                                                                      "e",
+                                                                      "m",
+                                                                      "p",
+                                                                      "e",
+                                                                      "r",
+                                                                      "a",
+                                                                      "t",
+                                                                      "u",
+                                                                      "r",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "{",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "y",
+                                                                      "p",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "b",
+                                                                      "o",
+                                                                      "o",
+                                                                      "l",
+                                                                      "e",
+                                                                      "a",
+                                                                      "n",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "d",
+                                                                      "e",
+                                                                      "f",
+                                                                      "a",
+                                                                      "u",
+                                                                      "l",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "t",
+                                                                      "r",
+                                                                      "u",
+                                                                      "e",
+                                                                      "}",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "p",
+                                                                      "r",
+                                                                      "e",
+                                                                      "s",
+                                                                      "s",
+                                                                      "u",
+                                                                      "r",
+                                                                      "e",
+                                                                      "U",
+                                                                      "n",
+                                                                      "i",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "{",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "y",
+                                                                      "p",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "s",
+                                                                      "e",
+                                                                      "l",
+                                                                      "e",
+                                                                      "c",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "o",
+                                                                      "p",
+                                                                      "t",
+                                                                      "i",
+                                                                      "o",
+                                                                      "n",
+                                                                      "s",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "[",
+                                                                      "\"",
+                                                                      "P",
+                                                                      "S",
+                                                                      "I",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "B",
+                                                                      "A",
+                                                                      "R",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "K",
+                                                                      "P",
+                                                                      "A",
+                                                                      "\"",
+                                                                      "]",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "d",
+                                                                      "e",
+                                                                      "f",
+                                                                      "a",
+                                                                      "u",
+                                                                      "l",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "P",
+                                                                      "S",
+                                                                      "I",
+                                                                      "\"",
+                                                                      "}",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "e",
+                                                                      "m",
+                                                                      "p",
+                                                                      "U",
+                                                                      "n",
+                                                                      "i",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "{",
+                                                                      "\"",
+                                                                      "t",
+                                                                      "y",
+                                                                      "p",
+                                                                      "e",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "s",
+                                                                      "e",
+                                                                      "l",
+                                                                      "e",
+                                                                      "c",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "o",
+                                                                      "p",
+                                                                      "t",
+                                                                      "i",
+                                                                      "o",
+                                                                      "n",
+                                                                      "s",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "[",
+                                                                      "\"",
+                                                                      "\\",
+                                                                      "u",
+                                                                      "0",
+                                                                      "0",
+                                                                      "b",
+                                                                      "0",
+                                                                      "F",
+                                                                      "\"",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "\\",
+                                                                      "u",
+                                                                      "0",
+                                                                      "0",
+                                                                      "b",
+                                                                      "0",
+                                                                      "C",
+                                                                      "\"",
+                                                                      "]",
+                                                                      ",",
+                                                                      "\"",
+                                                                      "d",
+                                                                      "e",
+                                                                      "f",
+                                                                      "a",
+                                                                      "u",
+                                                                      "l",
+                                                                      "t",
+                                                                      "\"",
+                                                                      ":",
+                                                                      "\"",
+                                                                      "\\",
+                                                                      "u",
+                                                                      "0",
+                                                                      "0",
+                                                                      "b",
+                                                                      "0",
+                                                                      "F",
+                                                                      "\"",
+                                                                      "}",
+                                                                      "}"
+                                                                  ],
+                                                        "style_override":  null,
+                                                        "bindings":  [
+
+                                                                     ]
+                                                    }
+                                                ]
+                                }
+                            ],
+                 "special_components":  {
+                                            "map":  {
+                                                        "enabled":  true,
+                                                        "grid":  {
+                                                                     "colStart":  1,
+                                                                     "colSpan":  5,
+                                                                     "rowStart":  1,
+                                                                     "rowSpan":  "full"
+                                                                 },
+                                                        "bindings":  {
+                                                                         "latitude":  "GPS_Latitude",
+                                                                         "longitude":  "GPS_Longitude",
+                                                                         "heading":  "GPS_Heading",
+                                                                         "speed":  "GPS_Speed"
+                                                                     }
+                                                    },
+                                            "shift_lights":  {
+                                                                 "enabled":  true,
+                                                                 "position":  "top",
+                                                                 "bindings":  {
+                                                                                  "rpm":  "RPM"
+                                                                              },
+                                                                 "config":  {
+                                                                                "totalLights":  10,
+                                                                                "startRpm":  4000,
+                                                                                "maxRpm":  9000,
+                                                                                "shiftRpm":  8500
+                                                                            }
+                                                             }
+                                        },
+                 "meta":  {
+                              "generated_at":  "2025-12-31T16:46:44.450820Z",
+                              "cache_ttl":  3600,
+                              "version":  "1.0"
+                          }
+             }
+}

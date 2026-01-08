@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 @import "tw-animate-css";
+@import "./dashboard-themes.css";
+@import "./neurona-variables.css";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -69,6 +71,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
   *,
   ::after,
   ::before,
@@ -79,6 +82,7 @@
 }
 
 @layer utilities {
+
   body,
   html {
     --font-sans:
@@ -164,13 +168,13 @@
 }
 
 @layer base {
-    * {
-        @apply border-border;
-    }
+  * {
+    @apply border-border;
+  }
 
-    body {
-        @apply bg-background text-foreground;
-    }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 /*
@@ -181,6 +185,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
