@@ -162,6 +162,7 @@ class DashboardConfigController extends Controller
                         'component_name' => $widget->definition->component_name,
                         'supports_thresholds' => $widget->definition->supports_thresholds,
                         'supports_multiple_slots' => $widget->definition->supports_multiple_slots,
+                        'props_schema' => $widget->definition->props_schema,
                     ],
                     'size_class' => $widget->size_class,
                     'props' => $widget->props,

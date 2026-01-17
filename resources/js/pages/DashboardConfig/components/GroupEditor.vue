@@ -230,9 +230,9 @@ function getWidgetName(widget: Widget) {
                              <button
                                 @click="emit('edit-binding', widgetIndex)"
                                 class="p-1 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded"
-                                title="Configurar Sensores"
+                                title="Configurar Widget"
                             >
-                                <Link2 class="h-3.5 w-3.5" />
+                                <Settings2 class="h-3.5 w-3.5" />
                             </button>
                             
                             <button

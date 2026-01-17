@@ -34,7 +34,7 @@ const startAngle = -140;
 const endAngle = 140;
 const outerRadius = 85;
 const innerRadius = 70;
-const textRadius = 60;
+const textRadius = 42;
 const needleLength = 65;
 
 // Convert speed to angle

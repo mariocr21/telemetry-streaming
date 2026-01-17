@@ -160,7 +160,7 @@ const createGauge = () => {
 
     // 4. Draw Ticks/Labels
     const majorTicks = 5;
-    const labelRadius = innerRadius - 20;
+    const labelRadius = innerRadius - 8;
     
     for (let i = 0; i <= majorTicks; i++) {
         const t = i / majorTicks; // 0 to 1

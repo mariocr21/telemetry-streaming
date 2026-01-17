@@ -7,8 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { LoaderCircle, Moon, Sun } from 'lucide-vue-next';
-import { ref, onMounted } from 'vue';
+import { LoaderCircle } from 'lucide-vue-next';
+import { onMounted } from 'vue';
 
 defineProps<{
     status?: string;
@@ -21,33 +21,10 @@ const form = useForm({
     remember: false,
 });
 
-// Dark mode state
-const isDark = ref(false);
-
-// Check for saved theme preference or default to 'light'
+// Force Dark Mode logic purely for consistency with the rest of the app now
 onMounted(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        isDark.value = savedTheme === 'dark';
-    } else {
-        isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    updateTheme();
+    document.documentElement.classList.add('dark');
 });
-
-const toggleTheme = () => {
-    isDark.value = !isDark.value;
-    updateTheme();
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
-};
-
-const updateTheme = () => {
-    if (isDark.value) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
-};
 
 const submit = () => {
     form.post(route('login'), {
@@ -57,242 +34,116 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Login - N Racing">
+    <Head title="Login - Neurona Telemetry">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     </Head>
 
-    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] flex flex-col lg:flex-row transition-colors duration-300">
+    <div class="min-h-screen bg-[#050505] flex flex-col justify-center items-center p-4 selection:bg-[#00e1ff] selection:text-black font-sans relative overflow-hidden">
         
-        <!-- Left Side - Branding & Info -->
-        <div class="lg:flex-1 bg-gradient-to-br from-[#00bcd4] to-[#0097a7] relative overflow-hidden flex items-center justify-center p-8 lg:p-16">
-            <!-- Background Pattern -->
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-20 left-10 w-32 h-32 border-2 border-white rounded-full"></div>
-                <div class="absolute bottom-32 right-16 w-24 h-24 border-2 border-white rounded-full"></div>
-                <div class="absolute top-1/2 left-1/4 w-16 h-16 border-2 border-white rounded-full"></div>
-                <div class="absolute top-1/3 right-1/3 w-20 h-20 border-2 border-white rounded-full"></div>
-            </div>
-
-            <!-- Content -->
-            <div class="relative z-10 text-center text-white max-w-md">
-                <!-- Logo -->
-                <div class="flex items-center justify-center gap-3 mb-8">
-                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white font-bold text-2xl">
-                        <AppLogoIcon class="size-16" />
-                    </div>
-                    <div class="text-left">
-                        <div class="text-3xl font-bold leading-none">Neurona</div>
-                        <div class="text-sm opacity-90 font-medium tracking-[2px] uppercase">
-                            Off Road Racing
-                        </div>
-                    </div>
-                </div>
-
-                <h1 class="text-3xl lg:text-4xl font-bold mb-4">
-                    Monitoreo en Tiempo Real
-                </h1>
-                <p class="text-lg opacity-90 mb-8 leading-relaxed">
-                    Accede al sistema de telemetría más avanzado para carreras off-road. 
-                    Baja 1000, rally y competencias extremas.
-                </p>
-
-                <!-- Stats -->
-                <div class="grid grid-cols-3 gap-6 text-center">
-                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                        <div class="text-2xl font-bold">500+</div>
-                        <div class="text-sm opacity-80">Carreras</div>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                        <div class="text-2xl font-bold">24/7</div>
-                        <div class="text-sm opacity-80">Tracking</div>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                        <div class="text-2xl font-bold">99.9%</div>
-                        <div class="text-sm opacity-80">Uptime</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Subtle Ambient Background -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#00e1ff] opacity-[0.03] rounded-full blur-[120px]"></div>
         </div>
 
-        <!-- Right Side - Login Form -->
-        <div class="lg:flex-1 flex items-center justify-center p-8 lg:p-16 relative">
+        <div class="w-full max-w-sm relative z-10">
             
-            <!-- Theme Toggle -->
-            <button
-                @click="toggleTheme"
-                class="absolute top-6 right-6 w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-300 group"
-            >
-                <Sun v-if="isDark" class="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" />
-                <Moon v-else class="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" />
-            </button>
+            <!-- Logo & Header -->
+            <div class="flex flex-col items-center mb-8">
+                <Link href="/" class="group mb-6">
+                    <div class="w-16 h-16 bg-[#ffffff05] rounded-2xl flex items-center justify-center text-[#00e1ff] border border-[#ffffff10] transition-all duration-300 group-hover:border-[#00e1ff]/30 group-hover:shadow-[0_0_20px_rgba(0,225,255,0.1)]">
+                        <AppLogoIcon class="size-8" />
+                    </div>
+                </Link>
+                
+                <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-1">
+                    <span class="text-[#00e1ff]"></span><span>NEURONA</span>
+                </h1>
+                <p class="text-[0.6rem] font-bold tracking-[3px] text-[#00e1ff] uppercase mt-1 glow-text opacity-90">
+                    OFF ROAD TELEMETRY
+                </p>
+            </div>
 
-            <!-- Back to Home -->
-            <Link 
-                href="/"
-                class="absolute top-6 left-6 text-sm text-gray-600 dark:text-gray-400 hover:text-[#00bcd4] dark:hover:text-[#00bcd4] transition-colors duration-300 flex items-center gap-2"
-            >
-                ← Volver al inicio
-            </Link>
-
-            <div class="w-full max-w-md">
-                <!-- Header -->
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold text-[#1b1b18] dark:text-white mb-2">
-                        Iniciar Sesión
-                    </h2>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Accede a tu panel de control de telemetría
-                    </p>
-                </div>
-
-                <!-- Status Message -->
-                <div v-if="status" class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center text-sm font-medium text-green-600 dark:text-green-400">
+            <!-- Login Container -->
+            <div class="bg-[#0a0c10] border border-[#ffffff10] rounded-xl shadow-2xl p-8 backdrop-blur-sm">
+                
+                <div v-if="status" class="mb-6 p-3 text-sm text-[#00e1ff] bg-[#00e1ff]/10 border border-[#00e1ff]/20 rounded text-center">
                     {{ status }}
                 </div>
 
-                <!-- Login Form -->
-                <form @submit.prevent="submit" class="space-y-6">
+                <form @submit.prevent="submit" class="space-y-5">
                     
-                    <!-- Email Field -->
+                    <!-- Email -->
                     <div class="space-y-2">
-                        <Label for="email" class="text-[#1b1b18] dark:text-[#EDEDEC] font-medium">
-                            Correo Electrónico
-                        </Label>
-                        <div class="relative">
-                            <Input
-                                id="email"
-                                type="email"
-                                required
-                                autofocus
-                                :tabindex="1"
-                                autocomplete="email"
-                                v-model="form.email"
-                                placeholder="tu@email.com"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#00bcd4] focus:border-transparent transition-all duration-300 text-[#1b1b18] dark:text-[#EDEDEC] placeholder-gray-500 dark:placeholder-gray-400"
-                            />
-                        </div>
+                        <Label for="email" class="text-xs uppercase font-semibold text-gray-500 tracking-wider">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            required
+                            autofocus
+                            v-model="form.email"
+                            class="bg-[#050505] border-[#ffffff15] text-white focus:border-[#00e1ff] focus:ring-1 focus:ring-[#00e1ff] h-11 transition-all"
+                            placeholder="admin@neurona.com"
+                        />
                         <InputError :message="form.errors.email" />
                     </div>
 
-                    <!-- Password Field -->
+                    <!-- Password -->
                     <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label for="password" class="text-[#1b1b18] dark:text-[#EDEDEC] font-medium">
-                                Contraseña
-                            </Label>
-                            <TextLink 
+                        <div class="flex justify-between items-center">
+                            <Label for="password" class="text-xs uppercase font-semibold text-gray-500 tracking-wider">Password</Label>
+                             <TextLink 
                                 v-if="canResetPassword" 
                                 :href="route('password.request')" 
-                                class="text-sm text-[#00bcd4] hover:text-[#0097a7] transition-colors duration-300" 
-                                :tabindex="5"
+                                class="text-xs text-[#00e1ff] hover:text-[#33e7ff] transition-colors"
                             >
-                                ¿Olvidaste tu contraseña?
+                                ¿Recuperar?
                             </TextLink>
                         </div>
-                        <div class="relative">
-                            <Input
-                                id="password"
-                                type="password"
-                                required
-                                :tabindex="2"
-                                autocomplete="current-password"
-                                v-model="form.password"
-                                placeholder="••••••••"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#00bcd4] focus:border-transparent transition-all duration-300 text-[#1b1b18] dark:text-[#EDEDEC] placeholder-gray-500 dark:placeholder-gray-400"
-                            />
-                        </div>
+                        <Input
+                            id="password"
+                            type="password"
+                            required
+                            v-model="form.password"
+                            class="bg-[#050505] border-[#ffffff15] text-white focus:border-[#00e1ff] focus:ring-1 focus:ring-[#00e1ff] h-11 transition-all"
+                            placeholder="••••••••"
+                        />
                         <InputError :message="form.errors.password" />
                     </div>
 
-                    <!-- Remember Me -->
-                    <div class="flex items-center justify-between">
-                        <Label for="remember" class="flex items-center space-x-3 cursor-pointer">
-                            <Checkbox 
-                                id="remember" 
-                                v-model="form.remember" 
-                                :tabindex="3"
-                                class="border-gray-300 dark:border-gray-600 text-[#00bcd4] focus:ring-[#00bcd4]"
-                            />
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Recordarme</span>
-                        </Label>
+                    <!-- Remember -->
+                    <div class="flex items-center">
+                        <Checkbox 
+                            id="remember" 
+                            v-model="form.remember" 
+                            class="border-gray-600 data-[state=checked]:bg-[#00e1ff] data-[state=checked]:text-black data-[state=checked]:border-[#00e1ff]"
+                        />
+                        <label for="remember" class="ml-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">Recordar sesión</label>
                     </div>
 
-                    <!-- Submit Button -->
                     <Button 
                         type="submit" 
-                        class="w-full bg-gradient-to-r from-[#00bcd4] to-[#0097a7] hover:from-[#0097a7] hover:to-[#00838f] text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 hover:-translate-y-0.5 shadow-lg shadow-[rgba(0,188,212,0.25)] hover:shadow-xl hover:shadow-[rgba(0,188,212,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" 
-                        :tabindex="4" 
+                        class="w-full h-11 bg-[#00e1ff] hover:bg-[#33e7ff] text-black font-bold uppercase tracking-wide transition-all shadow-[0_0_15px_rgba(0,225,255,0.1)] hover:shadow-[0_0_25px_rgba(0,225,255,0.3)]" 
                         :disabled="form.processing"
                     >
-                        <LoaderCircle v-if="form.processing" class="h-5 w-5 animate-spin mr-2" />
-                        <span v-if="!form.processing">Iniciar Sesión</span>
-                        <span v-else>Iniciando sesión...</span>
+                        <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin mr-2" />
+                        {{ form.processing ? 'Accediendo...' : 'Iniciar Sesión' }}
                     </Button>
-
-                    <!-- Register Link (commented as in original) -->
-                    <!-- <div class="text-center pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            ¿No tienes una cuenta?
-                            <TextLink 
-                                :href="route('register')" 
-                                :tabindex="6"
-                                class="text-[#00bcd4] hover:text-[#0097a7] font-medium transition-colors duration-300"
-                            >
-                                Regístrate aquí
-                            </TextLink>
-                        </p>
-                    </div> -->
                 </form>
+            </div>
 
-                <!-- Footer Info -->
-                <div class="mt-8 text-center">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        Al iniciar sesión, aceptas nuestros términos y condiciones
-                    </p>
-                </div>
+            <!-- Footer -->
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-600">
+                    &copy; 2026 Neurona Telemetry System
+                </p>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Custom animations */
-@keyframes float {
-    0%, 100% { 
-        transform: translateY(0px) rotate(0deg); 
-    }
-    33% { 
-        transform: translateY(-10px) rotate(3deg); 
-    }
-    66% { 
-        transform: translateY(5px) rotate(-3deg); 
-    }
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-    .lg\:flex-row {
-        flex-direction: column;
-    }
-    
-    .lg\:flex-1:first-child {
-        min-height: 40vh;
-    }
-}
-
-/* Dark mode transitions */
-* {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Input focus styles */
-.focus\:ring-2:focus {
-    box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.2);
-}
-
-/* Button hover animations */
-.hover\:-translate-y-0\.5:hover {
-    transform: translateY(-2px);
+.glow-text {
+    text-shadow: 0 0 10px rgba(0, 225, 255, 0.4);
 }
 </style>

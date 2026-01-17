@@ -3,349 +3,263 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
 
-// Props que puedes recibir del controlador
+// Props
 defineProps<{
     auth?: {
         user?: any;
     };
 }>();
 
-// Estado reactivo
 const isLoaded = ref(false);
 
-// Datos de ejemplo para los vehículos de carrera
-const racingVehicles = ref([
-    {
-        id: 1,
-        number: '101',
-        driver: 'Carlos Mendoza',
-        vehicle: 'Polaris RZR Pro R',
-        category: 'UTV',
-        position: 'CP-3 Ojos Negros',
-        status: 'racing',
-        statusText: 'En Carrera',
-        speed: '78 km/h',
-        lastUpdate: '2 min',
-    },
-    {
-        id: 2,
-        number: '205',
-        driver: 'Ana Rodríguez',
-        vehicle: 'Ford Raptor',
-        category: 'Trophy Truck',
-        position: 'CP-2 Valle de Trinidad',
-        status: 'pit',
-        statusText: 'En Pits',
-        speed: '0 km/h',
-        lastUpdate: '5 min',
-    },
-    {
-        id: 3,
-        number: '89',
-        driver: 'Miguel Santos',
-        vehicle: 'Honda Talon',
-        category: 'UTV Sport',
-        position: 'CP-4 San Felipe',
-        status: 'racing',
-        statusText: 'En Carrera',
-        speed: '65 km/h',
-        lastUpdate: '1 min',
-    },
-    {
-        id: 4,
-        number: '334',
-        driver: 'Jessica López',
-        vehicle: 'Can-Am X3',
-        category: 'UTV',
-        position: 'CP-1 Ensenada',
-        status: 'dnf',
-        statusText: 'Retirado',
-        speed: '0 km/h',
-        lastUpdate: '15 min',
-    },
-]);
-
-// Características del sistema para racing
+// Features based on Bitacora
 const features = ref([
     {
-        icon: '🏁',
-        title: 'Rastreo GPS de Alta Precisión',
-        description: 'Monitoreo en tiempo real de posición, velocidad y trayectoria en terrenos extremos de Baja California',
+        icon: '🏎️',
+        title: 'Live Telemetry Dashboard',
+        description: 'Visualización en tiempo real optimizada para tablets rugerizadas. Gauges D3.js de alta precisión y modo oscuro para visibilidad extrema.',
     },
     {
-        icon: '📡',
-        title: 'Telemetría de Sensores',
-        description: 'Motor, temperatura, combustible, presión de llantas y más de 20 sensores críticos para la carrera',
+        icon: '🗺️',
+        title: 'GPS & Live Mapping',
+        description: 'Rastreo satelital preciso integrado con Leaflet. Monitoreo de trayectoria, velocidad y posición en terrenos off-road.',
     },
     {
-        icon: '⚡',
-        title: 'Alertas de Seguridad',
-        description: 'Notificaciones instantáneas de emergencias, volcaduras, paradas prolongadas y zonas de peligro',
+        icon: '🔧',
+        title: 'Custom Sensor Mapping',
+        description: 'Vinculación dinámica de sensores (OBD2, CAN, Analógicos). Normalización de IDs y configuración avanzada por vehículo.',
+    },
+    {
+        icon: '📼',
+        title: 'Replay System & Analytics',
+        description: 'Grabación y reproducción de sesiones de carrera. Analiza RPM, temperaturas, fuerzas G y más para mejorar el rendimiento.',
     },
 ]);
 
-// Lifecycle
+// Simulated Live Data for the Mockup
+const liveData = ref({
+    rpm: 6850,
+    speed: 112,
+    temp: 195,
+    gear: 4,
+});
+
+// Animate values periodically
 onMounted(() => {
     setTimeout(() => {
         isLoaded.value = true;
     }, 100);
+
+    setInterval(() => {
+        liveData.value.rpm = 6500 + Math.floor(Math.random() * 800);
+        liveData.value.speed = 110 + Math.floor(Math.random() * 15);
+        liveData.value.temp = 190 + Math.floor(Math.random() * 10);
+    }, 1000);
 });
 </script>
 
 <template>
-    <Head title="Welcome - NEURONA Racing">
+    <Head title="Neurona Off Road Telemetry">
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
     </Head>
 
-    <div class="flex min-h-screen flex-col bg-[#FDFDFC] text-[#1b1b18]">
+    <div class="flex min-h-screen flex-col bg-[#050505] text-gray-300 font-sans overflow-x-hidden selection:bg-[#00e1ff] selection:text-black">
+        
         <!-- Header -->
-        <header class="border-b border-[rgba(25,20,0,0.1)] bg-[#FDFDFC]">
-            <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <header class="fixed top-0 w-full z-50 border-b border-[#ffffff10] bg-[#050505]/90 backdrop-blur-md">
+            <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
                 <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    <div
-                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br bg-black/85 text-white transition-all duration-300 hover:scale-105"
-                    >
-                        <AppLogoIcon class="size-8" />
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-2xl leading-none font-bold text-[#00bcd4]">NEURONA</div>
-                        <div class="text-xs font-medium tracking-[2px] text-gray-500 uppercase">Off Road Racing Telemetry</div>
+                    <div class="flex items-center justify-center">
+                         <!-- Using the provided logo style: Text-based with specific colors from the image -->
+                        <div class="text-3xl font-bold tracking-tight flex items-center gap-1 select-none">
+                             <!-- App Logo or Icon representation could go here, but focusing on the text logo -->
+                             <span class="text-[#00e1ff]">NEUR</span>
+                             <!-- Brain/Chip Icon Placeholder if needed, for now just text or the AppLogoIcon -->
+                             <AppLogoIcon class="w-8 h-8 text-[#00e1ff]" />
+                             <span class="text-[#00e1ff]">NA</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Navigation Actions -->
+                <!-- Navigation -->
                 <nav class="flex items-center gap-4">
-                    <Link
-                        href="#"
-                        class="rounded-lg border border-[rgba(25,20,0,0.2)] px-6 py-3 text-sm font-medium text-[#1b1b18] transition-all duration-300 hover:border-[rgba(25,20,0,0.3)] hover:bg-[rgba(25,20,0,0.05)]"
-                    >
-                        Documentación
-                    </Link>
                     <Link
                         v-if="$page.props.auth?.user"
                         :href="route('dashboard')"
-                        class="rounded-lg bg-gradient-to-r from-[#00bcd4] to-[#0097a7] px-6 py-3 text-sm font-medium text-white shadow-lg shadow-[rgba(0,188,212,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[rgba(0,188,212,0.3)]"
+                        class="hidden sm:block text-sm font-medium text-gray-400 hover:text-[#00e1ff] transition-colors"
                     >
-                        Ir al Dashboard
+                        Dashboard
                     </Link>
-                    <template v-else>
-                        <Link
-                            :href="route('login')"
-                            class="rounded-lg bg-gradient-to-r from-[#00bcd4] to-[#0097a7] px-6 py-3 text-sm font-medium text-white shadow-lg shadow-[rgba(0,188,212,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[rgba(0,188,212,0.3)]"
-                        >
-                            Iniciar Sesión
-                        </Link>
-                    </template>
+                    <Link
+                        v-if="!$page.props.auth?.user"
+                        :href="route('login')"
+                         class="group relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-bold text-[#050505] transition-all duration-300 bg-[#00e1ff] rounded-lg hover:bg-[#33e7ff] focus:outline-none focus:ring-2 focus:ring-[#00e1ff] focus:ring-offset-2 focus:ring-offset-gray-900 shadow-[0_0_15px_rgba(0,225,255,0.3)]"
+                    >
+                        <span class="relative">INICIAR SESIÓN</span>
+                    </Link>
                 </nav>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex flex-1 items-center justify-center p-8">
-            <div class="grid w-full max-w-6xl items-center gap-16 lg:grid-cols-2">
-                <!-- Content Section -->
-                <div
-                    class="relative rounded-xl bg-white p-12 shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] transition-all duration-800"
-                    :class="{ 'translate-y-0 opacity-100': isLoaded, 'translate-y-5 opacity-0': !isLoaded }"
-                >
-                    <!-- Top Border -->
-                    <div class="absolute top-0 right-0 left-0 h-1 rounded-t-xl bg-gradient-to-r from-[#00bcd4] to-[#0097a7]"></div>
+        <!-- Hero Section -->
+        <main class="flex-1 flex items-center justify-center pt-20 relative">
+            <!-- Background Elements -->
+             <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#00e1ff] opacity-[0.03] rounded-full blur-[100px]"></div>
+                <div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#00f8ff] opacity-[0.02] rounded-full blur-[100px]"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#050505]/50 to-[#050505]"></div>
+            </div>
 
-                    <h1 class="mb-2 text-3xl font-semibold text-[#1b1b18]">Bienvenido a NeuronaWireless Racing</h1>
-                    <p class="mb-8 leading-relaxed text-[#706f6c]">
-                        Tu sistema de telemetría para carreras off-road está listo. Monitorea pilotos, vehículos y sensores en tiempo real durante
-                        competencias como la Baja 1000.
+            <div class="w-full max-w-7xl px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10 py-12 lg:py-20">
+                
+                <!-- Text Content -->
+                <div 
+                    class="space-y-8 transition-all duration-1000 transform"
+                    :class="{ 'translate-y-0 opacity-100': isLoaded, 'translate-y-10 opacity-0': !isLoaded }"
+                >
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ffffff05] border border-[#ffffff10]">
+                        <span class="w-2 h-2 rounded-full bg-[#00e1ff] animate-pulse"></span>
+                        <span class="text-xs font-mono text-[#00e1ff]">SYSTEM ONLINE v2.0</span>
+                    </div>
+
+                    <h1 class="text-5xl lg:text-7xl font-bold text-white leading-tight">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">PRECISIÓN</span> EN <br/>
+                        <span class="text-[#00e1ff] text-glow">TIEMPO REAL</span>
+                    </h1>
+                    
+                    <p class="text-lg text-gray-400 max-w-xl leading-relaxed">
+                        Plataforma avanzada de telemetría para competición Off-Road. 
+                        Monitoreo crítico de motor, suspensión y GPS diseñado para la rudeza de la Baja 1000.
                     </p>
 
-                    <!-- Features List -->
-                    <ul class="mb-8 space-y-0">
-                        <li
-                            v-for="(feature, index) in features"
-                            :key="index"
-                            class="flex items-center gap-4 rounded-lg border-b border-[#e3e3e0] py-4 transition-all duration-300 last:border-b-0 hover:bg-gray-50 hover:px-2"
-                        >
-                            <div
-                                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(0,188,212,0.1)] text-xl text-[#00bcd4]"
-                            >
-                                {{ feature.icon }}
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="mb-1 font-semibold text-[#1b1b18]">
-                                    {{ feature.title }}
-                                </h3>
-                                <p class="text-sm leading-snug text-gray-600">
-                                    {{ feature.description }}
-                                </p>
-                            </div>
-                        </li>
-                    </ul>
-
-                    <!-- CTA Buttons -->
                     <div class="flex flex-wrap gap-4">
                         <Link
-                            v-if="$page.props.auth?.user"
-                            :href="route('dashboard')"
-                            class="rounded-lg bg-gradient-to-r from-[#00bcd4] to-[#0097a7] px-6 py-3 font-medium text-white shadow-lg shadow-[rgba(0,188,212,0.2)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[rgba(0,188,212,0.3)]"
+                            :href="$page.props.auth?.user ? route('dashboard') : route('login')"
+                            class="px-8 py-4 bg-[#00e1ff] text-[#050505] font-bold rounded hover:bg-[#33e7ff] transition-all transform hover:-translate-y-1 shadow-[0_10px_20px_-10px_rgba(0,225,255,0.4)] clip-corner"
                         >
-                            Ver Carrera en Vivo
+                            ACCEDER AL SISTEMA
                         </Link>
-                        <template v-else>
-                            <Link
-                                :href="route('login')"
-                                class="rounded-lg bg-gradient-to-r from-[#00bcd4] to-[#0097a7] px-6 py-3 font-medium text-white shadow-lg shadow-[rgba(0,188,212,0.2)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[rgba(0,188,212,0.3)]"
-                            >
-                                Acceder al Sistema
-                            </Link>
-                        </template>
-                        <Link
-                            href="#"
-                            class="rounded-lg border border-[rgba(25,20,0,0.2)] px-6 py-3 font-medium text-[#1b1b18] transition-all duration-300 hover:border-[rgba(25,20,0,0.3)] hover:bg-[rgba(25,20,0,0.05)]"
-                        >
-                            Guía de Uso
-                        </Link>
+                         <button class="px-8 py-4 bg-transparent border border-[#ffffff20] text-white font-bold rounded hover:bg-[#ffffff05] transition-all clip-corner group">
+                            <span class="group-hover:text-[#00e1ff] transition-colors">VER DEMO</span>
+                        </button>
+                    </div>
+
+                    <!-- Features Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-12">
+                        <div v-for="(feature, idx) in features" :key="idx" class="p-4 rounded-xl bg-[#0a0c10] border border-[#ffffff08] hover:border-[#00e1ff]/30 transition-colors group">
+                            <div class="text-3xl mb-3 grayscale group-hover:grayscale-0 transition-all duration-300 drop-shadow-[0_0_10px_rgba(0,225,255,0.2)]">{{ feature.icon }}</div>
+                            <h3 class="text-white font-bold mb-1">{{ feature.title }}</h3>
+                            <p class="text-sm text-gray-500 leading-snug">{{ feature.description }}</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Visual Section -->
-                <div
-                    class="relative flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[rgba(0,188,212,0.05)] to-[rgba(0,151,167,0.1)] p-8 transition-all delay-200 duration-1000"
-                    :class="{ 'translate-y-0 opacity-100': isLoaded, 'translate-y-5 opacity-0': !isLoaded }"
+                <!-- Visual Mockup (Simulated Dashboard) -->
+                <div 
+                    class="relative lg:h-[600px] flex items-center justify-center transition-all duration-1000 delay-300 transform"
+                    :class="{ 'translate-x-0 opacity-100': isLoaded, 'translate-x-10 opacity-0': !isLoaded }"
                 >
-                    <!-- Racing Flag Pattern Background -->
-                    <div class="pointer-events-none absolute inset-0 overflow-hidden opacity-5">
-                        <div class="absolute top-4 right-8 h-8 w-8 rotate-45 transform bg-black"></div>
-                        <div class="absolute bottom-12 left-6 h-6 w-6 rotate-45 transform bg-black"></div>
-                        <div class="absolute top-1/2 right-1/4 h-4 w-4 rotate-45 transform bg-black"></div>
-                    </div>
-
-                    <!-- Floating Elements -->
-                    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-                        <div
-                            class="absolute top-[20%] right-[15%] h-15 w-15 animate-[float_6s_ease-in-out_infinite] rounded-full bg-[rgba(0,188,212,0.1)]"
-                        ></div>
-                        <div
-                            class="absolute bottom-[30%] left-[10%] h-10 w-10 animate-[float_6s_ease-in-out_infinite_2s] rounded-full bg-[rgba(0,188,212,0.1)]"
-                        ></div>
-                        <div
-                            class="absolute top-[60%] right-[25%] h-20 w-20 animate-[float_6s_ease-in-out_infinite_4s] rounded-full bg-[rgba(0,188,212,0.1)]"
-                        ></div>
-                    </div>
-
-                    <!-- Racing Dashboard Mockup -->
-                    <div class="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                        <!-- Header -->
-                        <div class="mb-6 flex items-center justify-between border-b border-[#e3e3e0] pb-4">
-                            <div class="flex items-center gap-2">
-                                <div class="text-lg font-semibold text-[#1b1b18]">Baja 1000 - Live</div>
-                                <div class="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">LIVE</div>
+                    <!-- Tablet Frame -->
+                    <div class="relative w-full aspect-video max-w-2xl bg-[#0a0c10] rounded-2xl border-4 border-[#1a1c20] shadow-2xl overflow-hidden ring-1 ring-white/10 group">
+                        
+                        <!-- Screen Content -->
+                        <div class="absolute inset-0 bg-[#050505] p-6 flex flex-col justify-between">
+                             <!-- Top Bar -->
+                            <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                                <div class="font-mono text-[#00e1ff] text-lg">LIVE FEED • <span class="text-white">VEHICLE-01</span></div>
+                                <div class="flex gap-4 text-xs font-mono text-gray-400">
+                                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00e1ff]"></span> GPS FIX</span>
+                                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00e1ff]"></span> TELEMETRY OK</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 text-sm font-medium text-[#00bcd4]">
-                                <div class="h-2 w-2 animate-pulse rounded-full bg-[#00bcd4]"></div>
-                                Tracking
-                            </div>
-                        </div>
 
-                        <!-- Racing Vehicles List -->
-                        <div class="space-y-3">
-                            <div
-                                v-for="vehicle in racingVehicles"
-                                :key="vehicle.id"
-                                class="group cursor-pointer rounded-xl bg-gray-50 p-3 transition-all duration-300 hover:translate-x-1 hover:bg-blue-50"
-                            >
-                                <div class="mb-2 flex items-start justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-xs font-bold text-white"
-                                        >
-                                            {{ vehicle.number }}
-                                        </div>
-                                        <div>
-                                            <h4 class="text-sm font-semibold text-[#1b1b18] transition-colors group-hover:text-[#00bcd4]">
-                                                {{ vehicle.driver }}
-                                            </h4>
-                                            <p class="text-xs text-gray-500">{{ vehicle.vehicle }} • {{ vehicle.category }}</p>
-                                        </div>
+                            <!-- Gauges Mockup -->
+                            <div class="flex-1 grid grid-cols-2 gap-6 mt-6 items-center">
+                                <!-- RPM Box -->
+                                <div class="relative flex flex-col items-center justify-center py-8 rounded-xl bg-[#0f1115] border border-white/5 shadow-[0_0_30px_rgba(0,225,255,0.05)]">
+                                    <span class="text-gray-500 text-xs font-mono tracking-widest uppercase mb-2">Engine RPM</span>
+                                    <div class="text-5xl font-mono font-bold text-white tabular-nums tracking-tighter">
+                                        {{ liveData.rpm }}
                                     </div>
-                                    <div
-                                        class="rounded-full px-2 py-1 text-xs font-medium"
-                                        :class="{
-                                            'bg-green-100 text-green-700': vehicle.status === 'racing',
-                                            'bg-yellow-100 text-yellow-700': vehicle.status === 'pit',
-                                            'bg-red-100 text-red-700': vehicle.status === 'dnf',
-                                        }"
-                                    >
-                                        {{ vehicle.statusText }}
+                                    <div class="w-3/4 h-2 bg-gray-800 rounded-full mt-4 overflow-hidden">
+                                        <div 
+                                            class="h-full bg-gradient-to-r from-[#00e1ff] via-[#00f0ff] to-[#ffffff]" 
+                                            :style="{ width: `${(liveData.rpm / 9000) * 100}%` }"
+                                        ></div>
                                     </div>
                                 </div>
-                                <div class="flex items-center justify-between text-xs text-gray-600">
-                                    <span>{{ vehicle.position }}</span>
-                                    <div class="flex gap-3">
-                                        <span class="font-medium">{{ vehicle.speed }}</span>
-                                        <span>{{ vehicle.lastUpdate }}</span>
+
+                                <!-- Speed Box -->
+                                <div class="relative flex flex-col items-center justify-center py-8 rounded-xl bg-[#0f1115] border border-white/5">
+                                    <span class="text-gray-500 text-xs font-mono tracking-widest uppercase mb-2">Speed (KM/H)</span>
+                                    <div class="text-5xl font-mono font-bold text-[#00e1ff] tabular-nums tracking-tighter shadow-cyan">
+                                        {{ liveData.speed }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Temps Row -->
+                                <div class="col-span-2 grid grid-cols-3 gap-4">
+                                    <div class="bg-[#0f1115] rounded border border-white/5 p-3 text-center">
+                                        <div class="text-[10px] text-gray-500 uppercase">Coolant</div>
+                                        <div class="text-xl font-bold text-white font-mono">{{ liveData.temp }}°F</div>
+                                    </div>
+                                     <div class="bg-[#0f1115] rounded border border-white/5 p-3 text-center">
+                                        <div class="text-[10px] text-gray-500 uppercase">Oil</div>
+                                        <div class="text-xl font-bold text-white font-mono">210°F</div>
+                                    </div>
+                                     <div class="bg-[#0f1115] rounded border border-white/5 p-3 text-center">
+                                        <div class="text-[10px] text-gray-500 uppercase">Voltage</div>
+                                        <div class="text-xl font-bold text-[#ffee00] font-mono">14.2V</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Quick Stats -->
-                        <div class="mt-6 grid grid-cols-3 gap-4 border-t border-gray-200 pt-4 text-center">
-                            <div>
-                                <div class="text-lg font-bold text-[#00bcd4]">156</div>
-                                <div class="text-xs text-gray-500">Participantes</div>
-                            </div>
-                            <div>
-                                <div class="text-lg font-bold text-green-600">134</div>
-                                <div class="text-xs text-gray-500">En Carrera</div>
-                            </div>
-                            <div>
-                                <div class="text-lg font-bold text-orange-500">22</div>
-                                <div class="text-xs text-gray-500">DNF</div>
-                            </div>
-                        </div>
+                         <!-- Glare Effect -->
+                        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none"></div>
                     </div>
+
+                    <!-- Decorative Circle behind -->
+                    <div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-white/5 rounded-full animate-[spin_60s_linear_infinite]"></div>
+                    <div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] border border-dashed border-white/5 rounded-full animate-[spin_40s_linear_infinite_reverse]"></div>
                 </div>
+
             </div>
         </main>
+
+        <footer class="border-t border-[#ffffff08] py-8 bg-[#020202]">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-gray-600 text-sm">
+                    &copy; 2026 Neurona Off Road Telemetry. All rights reserved.
+                </div>
+                <!-- Socials or links could go here -->
+                <div class="flex gap-6 text-sm text-gray-500">
+                    <a href="#" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms</a>
+                    <a href="#" class="hover:text-white transition-colors">Support</a>
+                </div>
+            </div>
+        </footer>
     </div>
 </template>
 
 <style scoped>
-@keyframes float {
-    0%,
-    100% {
-        transform: translateY(0px) rotate(0deg);
-    }
-    33% {
-        transform: translateY(-20px) rotate(120deg);
-    }
-    66% {
-        transform: translateY(10px) rotate(240deg);
-    }
+.text-glow {
+    text-shadow: 0 0 20px rgba(0, 225, 255, 0.5);
 }
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-    .grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
+.shadow-cyan {
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
 }
 
-@media (max-width: 640px) {
-    .bg-white {
-        padding: 2rem;
-    }
+.clip-corner {
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
+}
 
-    .flex-wrap {
-        flex-direction: column;
-    }
-
-    .px-6 {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
+.glow-text {
+    text-shadow: 0 0 5px rgba(0, 225, 255, 0.8);
 }
 </style>
