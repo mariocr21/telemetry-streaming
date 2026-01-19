@@ -19,28 +19,26 @@ return new class extends Migration {
     {
         // Update vehicle_sensors that have NULL mapping_key
         // Set mapping_key = sensor.pid
+        // Using PostgreSQL-compatible syntax with FROM clause
         DB::statement('
             UPDATE vehicle_sensors 
-            SET mapping_key = (
-                SELECT sensors.pid 
-                FROM sensors 
-                WHERE sensors.id = vehicle_sensors.sensor_id
-            )
-            WHERE vehicle_sensors.mapping_key IS NULL
+            SET mapping_key = sensors.pid
+            FROM sensors 
+            WHERE sensors.id = vehicle_sensors.sensor_id
+            AND vehicle_sensors.mapping_key IS NULL
         ');
 
         // Also set default source_type based on sensor.is_standard
+        // Using PostgreSQL boolean comparison (TRUE/FALSE instead of 1/0)
         DB::statement('
             UPDATE vehicle_sensors 
-            SET source_type = (
-                SELECT CASE 
-                    WHEN sensors.is_standard = 1 THEN \'OBD2\'
-                    ELSE \'CAN_CUSTOM\'
-                END
-                FROM sensors 
-                WHERE sensors.id = vehicle_sensors.sensor_id
-            )
-            WHERE vehicle_sensors.source_type IS NULL
+            SET source_type = CASE 
+                WHEN sensors.is_standard = TRUE THEN \'OBD2\'
+                ELSE \'CAN_CUSTOM\'
+            END
+            FROM sensors 
+            WHERE sensors.id = vehicle_sensors.sensor_id
+            AND vehicle_sensors.source_type IS NULL
         ');
     }
 
